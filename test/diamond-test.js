@@ -91,7 +91,7 @@ describe("Greeter", function () {
     const test1FacetDiamond = await addFacet('Test1Facet', diamondAddress)
     const res = await test1FacetDiamond.test1Func10()
 
-    console.log(res.toString())
+    assert.equal(res.toString(), 'ciao')
 
   });
 });
