@@ -1,9 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import { Counter } from "../storage/Counter.sol";
+
 contract Test2Facet {
-    function test2Func1() external pure returns (string memory) {
-        return 'ciao';
+    function test2Func1() external view returns (uint256) {
+        Counter.CounterStorage storage ds = Counter.counterStorage();
+        return ds.counter;
     }
 
     function test2Func2() external {}

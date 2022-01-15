@@ -61,7 +61,7 @@ async function addFacet(facetName, diamondAddress) {
   const Facet = await ethers.getContractFactory(facetName)
   const facet = await Facet.deploy()
   await facet.deployed()
-  const selectors = getSelectors(facet).remove(['supportsInterface(bytes4)'])
+  const selectors = getSelectors(facet)
   tx = await diamondCutFacet.diamondCut(
     [{
       facetAddress: facet.address,
@@ -82,16 +82,34 @@ async function addFacet(facetName, diamondAddress) {
 }
 
 describe("Diamond test", function () {
+  let diamondAddress
+  let test1FacetDiamond
+  let test2FacetDiamond
   it("Should deploy Test1Facet and call test1Func10 returning 'ciao'", async function () {
     /* global ethers */
     /* eslint prefer-const: "off" */
 
-    const diamondAddress = await deployDiamond()
+    diamondAddress = await deployDiamond()
 
-    const test1FacetDiamond = await addFacet('Test1Facet', diamondAddress)
+    test1FacetDiamond = await addFacet('Test1Facet', diamondAddress)
     const res = await test1FacetDiamond.test1Func10()
 
     assert.equal(res.toString(), 'ciao')
+
+  });
+
+  it("Facet1 should set value in DiamondStorage and Facet2 should read it", async function () {
+    /* global ethers */
+    /* eslint prefer-const: "off" */
+    
+    await test1FacetDiamond.test1Func1()
+
+    await tx.wait()
+
+    test2FacetDiamond = await addFacet('Test2Facet', diamondAddress)
+    const res = await test2FacetDiamond.test2Func1()
+
+    assert.equal(res.toString(), 1)
 
   });
 });
