@@ -81,8 +81,8 @@ async function addFacet(facetName, diamondAddress) {
   return await ethers.getContractAt(facetName, diamondAddress)
 }
 
-describe("Greeter", function () {
-  it("Should return the new greeting once it's changed", async function () {
+describe("Diamond test", function () {
+  it("Should deploy Test1Facet and call test1Func10 returning 'ciao'", async function () {
     /* global ethers */
     /* eslint prefer-const: "off" */
 
