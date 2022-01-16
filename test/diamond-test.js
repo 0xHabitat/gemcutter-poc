@@ -55,7 +55,7 @@ async function deployDiamond() {
   return diamond.address
 }
 
-async function addFacet(facetName, diamondAddress) {
+async function addAllFacetFunctions(facetName, diamondAddress) {
   const diamondCutFacet = await ethers.getContractAt('DiamondCutFacet', diamondAddress)
 
   const Facet = await ethers.getContractFactory(facetName)
@@ -76,13 +76,35 @@ async function addFacet(facetName, diamondAddress) {
   const diamondLoupeFacet = await ethers.getContractAt('DiamondLoupeFacet', diamondAddress)
   result = await diamondLoupeFacet.facetFunctionSelectors(facet.address)
   assert.sameMembers(result, selectors)
-  
+
   console.log(`${facetName} facet added`)
-  return await ethers.getContractAt(facetName, diamondAddress)
+  return {
+    facet: await ethers.getContractAt(facetName, diamondAddress),
+    address: facet.address
+  }
+}
+
+async function removeFacetFunctions(facetName, functionsToRemove, diamondAddress) {
+  const facet = await ethers.getContractAt(facetName, diamondAddress)
+  const selectors = getSelectors(facet).get(functionsToRemove)
+
+  const diamondCutFacet = await ethers.getContractAt('DiamondCutFacet', diamondAddress)
+  const tx = await diamondCutFacet.diamondCut(
+    [{
+      facetAddress: ethers.constants.AddressZero,
+      action: FacetCutAction.Remove,
+      functionSelectors: selectors
+    }],
+    ethers.constants.AddressZero, '0x', { gasLimit: 800000 })
+  const receipt = await tx.wait()
+  if (!receipt.status) {
+    throw Error(`Diamond upgrade failed: ${tx.hash}`)
+  }
 }
 
 describe("Diamond test", function () {
   let diamondAddress
+  let test1Address
   let test1FacetDiamond
   let test2FacetDiamond
   it("Should deploy Test1Facet and call test1Func10 returning 'ciao'", async function () {
@@ -91,25 +113,37 @@ describe("Diamond test", function () {
 
     diamondAddress = await deployDiamond()
 
-    test1FacetDiamond = await addFacet('Test1Facet', diamondAddress)
+    const { address, facet } = await addAllFacetFunctions('Test1Facet', diamondAddress)
+    test1Address = address
+    test1FacetDiamond = facet
     const res = await test1FacetDiamond.test1Func10()
 
     assert.equal(res.toString(), 'ciao')
 
   });
 
-  it("Facet1 should set value in DiamondStorage and Facet2 should read it", async function () {
+  it("Should set value in DiamondStorage from Facet1 and Facet2 should read it", async function () {
     /* global ethers */
     /* eslint prefer-const: "off" */
-    
+
     await test1FacetDiamond.test1Func1()
 
     await tx.wait()
 
-    test2FacetDiamond = await addFacet('Test2Facet', diamondAddress)
+    const { facet } = await addAllFacetFunctions('Test2Facet', diamondAddress)
+    test2FacetDiamond = facet
     const res = await test2FacetDiamond.test2Func1()
 
     assert.equal(res.toString(), 1)
 
   });
+
+  it('Should remove test1Func2 function', async () => {
+
+    await removeFacetFunctions('Test1Facet', ['test1Func2()'], diamondAddress)
+
+    const diamondLoupeFacet = await ethers.getContractAt('DiamondLoupeFacet', diamondAddress)
+    const result = await diamondLoupeFacet.facetFunctionSelectors(test1Address)
+    assert.equal(result.length, 2)
+  })
 });
