@@ -1,0 +1,61 @@
+{
+  "diamond": {
+    "diamondCut": "DiamondCutFacet",
+    "facetAddress": "DiamondLoupeFacet",
+    "facetAddresses": "DiamondLoupeFacet",
+    "facetFunctionSelectors": "DiamondLoupeFacet",
+    "facets": "DiamondLoupeFacet",
+    "supportsInterface": "DiamondLoupeFacet",
+    "owner": "OwnershipFacetCustom",
+    "transferOwnership": "OwnershipFacetCustom",
+    "MAX_LOCK": "BarnFacet",
+    "balanceAtTs": "BarnFacet",
+    "balanceOf": "BarnFacet",
+    "bondStaked": "BarnFacet",
+    "bondStakedAtTs": "BarnFacet",
+    "delegate": "BarnFacet",
+    "delegatedPower": "BarnFacet",
+    "delegatedPowerAtTs": "BarnFacet",
+    "deposit": "BarnFacet",
+    "depositAndLock": "BarnFacet",
+    "initBarn": "BarnFacet",
+    "lock": "BarnFacet",
+    "multiplierAtTs": "BarnFacet",
+    "multiplierOf": "BarnFacet",
+    "stakeAtTs": "BarnFacet",
+    "stopDelegate": "BarnFacet",
+    "userDelegatedTo": "BarnFacet",
+    "userLockedUntil": "BarnFacet",
+    "votingPower": "BarnFacet",
+    "votingPowerAtTs": "BarnFacet",
+    "withdraw": "BarnFacet",
+    "newFunc": "NewFacet"
+  },
+  "contracts": {
+    "DiamondCutFacet": {
+      "name": "DiamondCutFacet",
+      "address": "0x767f7d9E655161C9E6D8a3Dbb565666FCAa2BDf4",
+      "type": "remote"
+    },
+    "DiamondLoupeFacet": {
+      "name": "DiamondLoupeFacet",
+      "address": "0x04499B879F6A7E75802cd09354eF2B788BF4Cf26",
+      "type": "remote"
+    },
+    "OwnershipFacetCustom": {
+      "name": "OwnershipFacetCustom",
+      "address": "0x1231231231231231231231....",
+      "type": "remote"
+    },
+    "BarnFacet": {
+      "name": "BarnFacet",
+      "type": "local",
+      "path": "facets/BarnFacet.sol"
+    },
+    "NewFacet": {
+      "name": "NewFacet",
+      "type": "local",
+      "path": "facets/NewFacet.sol"
+    }
+  }
+}

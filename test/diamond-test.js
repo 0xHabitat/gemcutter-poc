@@ -1,6 +1,6 @@
 const { expect, assert } = require("chai");
 const { ethers } = require("hardhat");
-const { getSelectors, FacetCutAction } = require('./libraries/diamond.js')
+const { getSelectors, FacetCutAction, getSelector } = require('./libraries/diamond.js')
 
 async function deployDiamond() {
   const accounts = await ethers.getSigners()
@@ -55,9 +55,10 @@ async function deployDiamond() {
   return diamond.address
 }
 
+
 async function addAllFacetFunctions(facetName, diamondAddress) {
   const diamondCutFacet = await ethers.getContractAt('DiamondCutFacet', diamondAddress)
-
+  
   const Facet = await ethers.getContractFactory(facetName)
   const facet = await Facet.deploy()
   await facet.deployed()
@@ -132,6 +133,11 @@ describe("Diamond test", function () {
 
     const { facet } = await addAllFacetFunctions('Test2Facet', diamondAddress)
     test2FacetDiamond = facet
+    console.log(getSelectors(facet))
+    /* console.log(Object.keys(test2FacetDiamond.interface.functions).map(fn => {
+      return getSelector(fn)
+    })) */
+    
     const res = await test2FacetDiamond.test2Func1()
 
     assert.equal(res.toString(), 1)
@@ -146,4 +152,5 @@ describe("Diamond test", function () {
     const result = await diamondLoupeFacet.facetFunctionSelectors(test1Address)
     assert.equal(result.length, 2)
   })
+
 });
