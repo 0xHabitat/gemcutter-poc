@@ -6,7 +6,6 @@ require('dotenv').config();
 
 //tasks
 require("./tasks/diamond.js");
-require("./tasks/compiledJSON.js");
 
 // This is a sample Hardhat task. To learn how to create your own go to
 // https://hardhat.org/guides/create-task.html
@@ -27,7 +26,7 @@ require("./tasks/compiledJSON.js");
 
 module.exports = {
   solidity: "0.8.4",
-  defaultNetwork: "mainnet",
+  defaultNetwork: "rinkeby",
   networks: {
     ropsten: {
       url: `${process.env.ALCHEMY_ROPSTEN_URL}`,

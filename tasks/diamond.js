@@ -6,41 +6,41 @@ require('dotenv').config();
 
 async function loupe(args) {
   const diamondLoupeFacet = await ethers.getContractAt('DiamondLoupeFacet', args.address)
-    const facets = await diamondLoupeFacet.facets()
+  const facets = await diamondLoupeFacet.facets()
 
-    let contracts = {}
-    let diamond = {}
+  let contracts = {}
+  let diamond = {}
 
-    for await (const facet of facets) {
-      const address = facet[0]
-      const fullUrl = `https://api.etherscan.io/api?module=contract&action=getsourcecode&address=${address}&apikey=${process.env.ETHERSCAN_API_KEY}`
-      const resp = await axios.get(fullUrl)
-      const abi = JSON.parse(resp.data.result[0].ABI)
-      // const code = resp.data.result[0].SourceCode
-      const name = resp.data.result[0].ContractName
+  for await (const facet of facets) {
+    const address = facet[0]
+    const fullUrl = `https://api.etherscan.io/api?module=contract&action=getsourcecode&address=${address}&apikey=${process.env.ETHERSCAN_API_KEY}`
+    const resp = await axios.get(fullUrl)
+    const abi = JSON.parse(resp.data.result[0].ABI)
+    // const code = resp.data.result[0].SourceCode
+    const name = resp.data.result[0].ContractName
 
-      let functions = []
-      let events = []
-      for (const obj of abi) {
-        if (obj.type === 'function') {
-          functions.push(obj.name)
-        }
-        if (obj.type === 'event') {
-          events.push(obj.name)
-        }
+    let functions = []
+    let events = []
+    for (const obj of abi) {
+      if (obj.type === 'function') {
+        functions.push(obj.name)
       }
+      if (obj.type === 'event') {
+        events.push(obj.name)
+      }
+    }
       
-      contracts[name] = {
-        name,
-        address,
-        type: 'remote',
-        //functions,
-        //events
-      }
+    contracts[name] = {
+      name,
+      address,
+      type: 'remote',
+    //functions,
+      //events
+    }
 
-      functions.forEach(fn => {
-        diamond[fn] = name
-      })
+    functions.forEach(fn => {
+      diamond[fn] = name
+    })
 
       /**
        * 
@@ -65,14 +65,15 @@ async function loupe(args) {
        */
     }
 
-    return {
-      diamond,
-      contracts
-    }
+  return {
+    diamond,
+    contracts
+  }
 
 }
 
-function convert(args) {
+function init(args) {
+
   const facetsPath = "/contracts/facets/";
   let files = fs.readdirSync("." + facetsPath);
 
@@ -84,14 +85,14 @@ function convert(args) {
       const abi = hre.artifacts.readArtifactSync(name).abi
 
       let functions = []
-
+      let events = []
       for (const obj of abi) {
       if (obj.type === 'function') {
           functions.push(obj.name)
       }
-      // if (obj.type === 'event') {
-      //   events.push(obj.name)
-      // }
+      if (obj.type === 'event') {
+        events.push(obj.name)
+      }
       }
 
       contracts[name] = {
@@ -196,10 +197,13 @@ function getContractsToDeploy(d) {
 
 task("diamond:loupe", "Do stuff with diamonds")
   .addParam("address", "The diamond's address")
-  .addOptionalParam("o", "The file to create", "")
+  .addOptionalParam("o", "The file to create", "diamond.json")
   .setAction(async (args) => {
     
+    /**@dev issues with getting ABI in loupe() function on a newly deployed and verified diamond */
+
     let output = await loupe(args)
+    console.log(output)
 
     if (args.o) {
       let filename = args.o
@@ -212,7 +216,7 @@ task("diamond:loupe", "Do stuff with diamonds")
 
 task("diamond:status", "clone diamond")
   .addParam("address", "The diamond's address")
-  .addOptionalParam("o", "The file to create", "")
+  .addOptionalParam("o", "The file to create", "diamond.json")
   .setAction(async (args) => {
     let output1 = await loupe(args)
 
@@ -229,75 +233,84 @@ task("diamond:status", "clone diamond")
 
   });
 
-
-task("diamond:compile", "Compares local .diamond to deployed .diamond")
-// .addParam("address", "The diamond's address")
-.addOptionalParam("o", "The file to create", "")
-.setAction(
+task("diamond:add", "Adds facets and functions to diamond.json")
+  // .addParam("facets", "The changed facets to add")
+  .addOptionalParam("o", "The diamond file to output to", "diamond.json")
+  .setAction(
   async (args, hre) => {
-    await hre.run("compile");
 
-    await hre.run("convert", args) // converts facet artifacts to .diamond format
-    
-    // await hre.run("status", args);  // get differences local/remote
+    await hre.run("compare", args); // inits facet artifacts to .diamond format
 
-    // await hre.run("loupe", args);
+  });
 
-  }
-);
+// diamond:remove
+
+// diamond:update
 
 subtask(
-  "convert", "Converts facet artificats to local .diamond.json file"
-).setAction(async (args) => {
-  let output = convert(args)
+  "compare", "compiles contracts, inits facet artificats, and compares with diamond.json")
+  .setAction(async (args, hre) => {
+    await hre.run("compile");
 
-  if (args.o) {
-    let filename = args.o
-    await fs.promises.writeFile('./' + filename, JSON.stringify(output, null, 2));
-  } else {
-    console.log(output)
-  }
+    let diamond0 = init(args);
 
-});
+    let diamond1 = JSON.parse(fs.readFileSync(args.o));
+
+    for (const obj of Object.entries(diamond1.contracts)) {
+      delete obj[1].address
+      delete obj[1].type
+    }
+
+    console.log(diamond0, diamond1)
+  });
+
+
 
 
 // deploy and verify new or changed facets
-task("diamond:upgrade", "Deploys diamond's changed facets and uploads sourcecode")
-.addParam("address", "The diamond's address")
-// .addOptionalParam("o", "The file to create", "")
-.setAction(
-  async (args, hre) => {
-    // find new facets in difference
+task("diamond:publish", "Deploys diamond's changed facets and uploads source code")
+  .addParam("address", "The diamond address")
+  .addOptionalParam("conceal", "Do not verify the sourcecode", "")
+  .setAction(async (args, hre) => {
 
-    // deploy facets to diamond using DiamondCut
+    if (!args.conceal) {
+      await hre.run("sourcify", args);
+    }
 
-    // await hre.run("scan", args);
-  }
-);
+  });
 
-subtask("scan", "verifies contract by sending source code to Etherscan")
+subtask("sourcify", "verifies contracts by uploading sourcecode and ABI")
   .setAction(async (args) => {
 
-    //call diamond loupe function on diamond to get facet addresses
+    const accounts = await ethers.getSigners()
 
-    //verify all facet addresses: https://hardhat.org/plugins/nomiclabs-hardhat-etherscan.html#using-programmatically
-    //for (const facetAddress of facetAddresses) { vvv }
+      
+    // call loupe function on diamond to get facet addresses
+  
+    // verify all facet addresses: https://hardhat.org/plugins/nomiclabs-hardhat-etherscan.html#using-programmatically
     await hre.run("verify:verify", {
-      address: facetAddress,
-      // constructorArguments: [
-      //   50,
-      //   "a string argument",
-      //   {
-      //     x: 10,
-      //     y: 5,
-      //   },
-      //   "0xabcdef",
-      // ],
+       address: args.address,
+      // // address _contractOwner, address _diamondCutFacet
+      constructorArguments: [
+  
+        `${accounts[0].address}`, // owner address
+        '0x47a49B8F0985199F3d45679b70C1FB4dE3EB9978' // DiamondCutFacet address
+  
+  
+      //   // 50,
+      //   // "a string argument",
+      //   // {
+      //   //   x: 10,
+      //   //   y: 5,
+      //   // },
+      //   // "0xabcdef",
+      ]
+      // libraries with undetectable addresses
       // libraries: {
       // SomeLibrary: "0x...",
       // }
     });
-});
+  });
 
 module.exports = {};
 
@@ -315,7 +328,18 @@ defaultNetwork: "mainnet",
 
 
 defaultNetwork: "rinkeby",
-- 0x3e9208957675D6acaB47778e6e9A3365ED604F61
-- 
+DiamondCutFacet deployed: 0x47a49B8F0985199F3d45679b70C1FB4dE3EB9978
+Diamond deployed: 0x2924caD980237dd0Bd6A701f23Bc3fCF5d10B359
+DiamondInit deployed: 0x8158289Ed9513692024c9143A3d55030501ec6b8
+
+Deploying facets
+DiamondLoupeFacet deployed: 0x7c573A4753d620E9213cD621D739dD1B4d3E7b45
+OwnershipFacet deployed: 0x16a32a181866c6e30A998E9A3BEE1D84DDB69d50
+
+
+defaultNetwork: "ropsten",
+
 
 */
+
+
