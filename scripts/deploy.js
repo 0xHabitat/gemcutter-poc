@@ -62,6 +62,7 @@ async function deployDiamond () {
     throw Error(`Diamond upgrade failed: ${tx.hash}`)
   }
   console.log('Completed diamond cut')
+  
   return diamond.address
 }
 
