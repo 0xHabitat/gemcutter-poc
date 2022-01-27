@@ -1,4 +1,22 @@
 {
-  "diamond": {},
-  "contracts": {}
+  "diamond": {
+    "test1Func1": "Test1Facet",
+    "test1Func10": "Test1Facet",
+    "test1Func2": "Test1Facet",
+    "test2Func1": "Test2Facet",
+    "test2Func10": "Test2Facet",
+    "test2Func11": "Test2Facet"
+  },
+  "contracts": {
+    "Test1Facet": {
+      "name": "Test1Facet",
+      "address": "0x6D2e7b205eDBCE197343129d27841e1Ca34CD686",
+      "type": "remote"
+    },
+    "Test2Facet": {
+      "name": "Test2Facet",
+      "address": "0x9C43347C11eA4180c692A33f1E57Af14B41bB20D",
+      "type": "remote"
+    }
+  }
 }

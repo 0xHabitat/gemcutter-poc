@@ -14,12 +14,20 @@ async function loupe(args) {
 
   for await (const facet of facets) {
     const address = facet[0]
-    const fullUrl = `https://api.etherscan.io/api?module=contract&action=getsourcecode&address=${address}&apikey=${process.env.ETHERSCAN_API_KEY}`
-    const resp = await axios.get(fullUrl)
-    const abi = JSON.parse(resp.data.result[0].ABI)
-    // const code = resp.data.result[0].SourceCode
-    const name = resp.data.result[0].ContractName
+    
+    const sourcify = new SourcifyJS.default('https://sourcify.dev')
 
+    let abi
+    let name
+    try {
+      const result = await sourcify.filesTree(address, 4);
+      const response = await axios.get(result.files[0])
+      abi = response.data.output.abi
+      name = Object.values(response.data.settings.compilationTarget)[0]
+    } catch(e) {
+      continue;
+    }
+    
     let functions = []
     let events = []
     for (const obj of abi) {
@@ -35,36 +43,12 @@ async function loupe(args) {
       name,
       address,
       type: 'remote',
-    //functions,
-      //events
     }
 
     functions.forEach(fn => {
       diamond[fn] = name
     })
-
-      /**
-       * 
-       * {
-              "diamond": {
-                  "test1Func1": "Test1Facet",
-                  "test3Func1": "Test1Facet"
-              },
-              "contracts": {
-                  "Test1Facet": {
-                      "name": "Test1Facet",
-                      "type": "remote",
-                      "address": "0x12301230912309..."
-                  },
-                  "Test3Facet": {
-                      "name": "Test3Facet",
-                      "type": "remote",
-                      "address": "0x12301230912309..."
-                  },
-              }
-          }
-       */
-    }
+  }
 
   return {
     diamond,
@@ -251,11 +235,10 @@ task("diamond:loupe", "Do stuff with diamonds")
     /**@dev issues with getting ABI in loupe() function on a newly deployed and verified diamond */
 
     let output = await loupe(args)
-    console.log(output)
 
     if (args.o) {
       let filename = args.o
-      await fs.promises.writeFile('./' + filename, JSON.stringify(output, null, 2));
+      await promises.writeFile('./' + filename, JSON.stringify(output, null, 2));
     } else {
       console.log(output)
     }
