@@ -3,27 +3,34 @@
 //
 // When running the script with `npx hardhat run <script>` you'll find the Hardhat
 // Runtime Environment's members available in the global scope.
-const hre = require("hardhat");
+// const hre = require("hardhat");
+
+
+var request = require('request');
+var fs = require('fs');
 
 async function main() {
-
-
-  const chainId = await hre.network.provider.send("eth_chainId")
-  console.log(chainId)
-  // Hardhat always runs the compile task when running scripts with its command
-  // line interface.
-  //
-  // If this script is run directly using `node` you may want to call compile
-  // manually to make sure everything is compiled
-  // await hre.run('compile');
-
-  // We get the contract to deploy
-  // const Greeter = await hre.ethers.getContractFactory("Greeter");
-  // const greeter = await Greeter.deploy("Hello, Hardhat!");
-
-  // await greeter.deployed();
-
-  // console.log("Greeter deployed to:", greeter.address);
+  var options = {
+    'method': 'POST',
+    'url': 'https://staging.sourcify.dev/server/input-files',
+    'headers': {
+    },
+    formData: {
+      'files': {
+        'value': fs.createReadStream('./artifacts/build-info/301076d3e74df8298d7dfddc4f049a6b.json'),
+        'options': {
+          'filename': '301076d3e74df8298d7dfddc4f049a6b.json',
+          'contentType': null
+        }
+      }
+    }
+  };
+  request(options, function (error, response) {
+    if (error) throw new Error(error);
+    console.log(response.body);
+    console.log(response)
+  });
+  
 }
 
 // We recommend this pattern to be able to use async/await everywhere

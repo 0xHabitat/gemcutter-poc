@@ -1,6 +1,7 @@
 // const { ethers } = require("hardhat");
 const axios = require('axios');
-const fs = require("fs");
+const SourcifyJS = require('sourcify-js');
+const { promises } = require("fs");
 const { diff } = require('json-diff');
 require('dotenv').config();
 
@@ -71,6 +72,53 @@ async function loupe(args) {
   }
 
 }
+
+async function generateLightFile() {
+  const buildInfo = 'artifacts/build-info'
+  const files = await promises.readdir(buildInfo)
+
+  const buffer = await promises.readFile(`${buildInfo}/${files[0]}`)
+  const string = await buffer.toString()
+  const json = JSON.parse(string)
+  delete json.output.sources
+  for (let path in json.output.contracts) {
+      for (let contract in json.output.contracts[path]) {
+          delete json.output.contracts[path][contract].abi
+          delete json.output.contracts[path][contract].evm
+      }
+  }
+  return json
+}
+
+async function verify(chaindId, contracts) {
+  let json = await generateLightFile()
+  const buffer = Buffer.from(JSON.stringify(json))
+  const sourcify = new SourcifyJS.default('https://staging.sourcify.dev')
+  const result = await sourcify.verify(chaindId, contracts, buffer)
+
+  return result;
+}
+
+task("diamond:verify", "Verify dimaonds")
+.addOptionalParam("o", "The file to create", "diamond.json")
+.setAction(async (args) => {
+  await hre.run("clean")
+  await hre.run("compile")
+  
+  let output = await verify(
+    '4', 
+    [
+      {
+          name: 'Diamond',
+          address: '0xcdbD9188d1788AFC260785B34A005e2ABadd7868'
+      },
+
+    ],
+  )
+  console.log(output)
+})
+
+
 
 function init(args) {
 
@@ -264,9 +312,6 @@ subtask(
     console.log(diamond0, diamond1)
   });
 
-
-
-
 // deploy and verify new or changed facets
 task("diamond:publish", "Deploys diamond's changed facets and uploads source code")
   .addParam("address", "The diamond address")
@@ -277,39 +322,6 @@ task("diamond:publish", "Deploys diamond's changed facets and uploads source cod
       await hre.run("sourcify", args);
     }
 
-  });
-
-subtask("sourcify", "verifies contracts by uploading sourcecode and ABI")
-  .setAction(async (args) => {
-
-    const accounts = await ethers.getSigners()
-
-      
-    // call loupe function on diamond to get facet addresses
-  
-    // verify all facet addresses: https://hardhat.org/plugins/nomiclabs-hardhat-etherscan.html#using-programmatically
-    await hre.run("verify:verify", {
-       address: args.address,
-      // // address _contractOwner, address _diamondCutFacet
-      constructorArguments: [
-  
-        `${accounts[0].address}`, // owner address
-        '0x47a49B8F0985199F3d45679b70C1FB4dE3EB9978' // DiamondCutFacet address
-  
-  
-      //   // 50,
-      //   // "a string argument",
-      //   // {
-      //   //   x: 10,
-      //   //   y: 5,
-      //   // },
-      //   // "0xabcdef",
-      ]
-      // libraries with undetectable addresses
-      // libraries: {
-      // SomeLibrary: "0x...",
-      // }
-    });
   });
 
 module.exports = {};
