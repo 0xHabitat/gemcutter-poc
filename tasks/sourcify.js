@@ -1,62 +1,7 @@
 // const { ethers } = require("hardhat");
-const axios = require('axios');
 const SourcifyJS = require('sourcify-js');
 const { promises } = require("fs");
-const { diff } = require('json-diff');
-const { getSelectors, FacetCutAction } = require('../scripts/libraries/diamond.js')
 require('dotenv').config();
-
-async function loupe(args) {
-  const diamondLoupeFacet = await ethers.getContractAt('DiamondLoupeFacet', args.address)
-  const facets = await diamondLoupeFacet.facets()
-
-  let contracts = {}
-  let diamond = {}
-
-  for await (const facet of facets) {
-    const address = facet[0]
-    
-    const sourcify = new SourcifyJS.default('https://sourcify.dev')
-
-    let abi
-    let name
-    try {
-      const result = await sourcify.filesTree(address, 4);
-      const response = await axios.get(result.files[0])
-      abi = response.data.output.abi
-      name = Object.values(response.data.settings.compilationTarget)[0]
-    } catch(e) {
-      continue;
-    }
-    
-    let functions = []
-    let events = []
-    for (const obj of abi) {
-      if (obj.type === 'function') {
-        functions.push(obj.name)
-      }
-      if (obj.type === 'event') {
-        events.push(obj.name)
-      }
-    }
-      
-    contracts[name] = {
-      name,
-      address,
-      type: 'remote',
-    }
-
-    functions.forEach(fn => {
-      diamond[fn] = name
-    })
-  }
-
-  return {
-    diamond,
-    contracts
-  }
-
-}
 
 // deploy contracts
 
