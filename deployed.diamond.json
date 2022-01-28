@@ -1,0 +1,27 @@
+[
+  {
+    "name": "DiamondCutFacet",
+    "address": "0x930fd5a030B3373Aec6E470BF5D34f536FC489A4",
+    "chainId": "4"
+  },
+  {
+    "name": "Diamond",
+    "address": "0xa0F4815D97dDA8B5783C0DcEdF5CfCb8Db06A22a",
+    "chainId": "4"
+  },
+  {
+    "name": "DimaondInit",
+    "address": "0x50D6975aE47345Ac263Ce1774F26dB56e4D0E365",
+    "chainId": "4"
+  },
+  {
+    "name": "DiamondLoupeFacet",
+    "address": "0xD2dFBf4CcF48A46e92a6EC2378b471df912E0C85",
+    "chainId": "4"
+  },
+  {
+    "name": "OwnershipFacet",
+    "address": "0xA26b39DF4F302EbB137aad7dA4864B32798b2F89",
+    "chainId": "4"
+  }
+]
