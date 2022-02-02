@@ -34,7 +34,7 @@ module.exports = {
     },
     rinkeby: {
       url: `${process.env.ALCHEMY_RINKEBY_URL}`,
-      accounts: [`0x${process.env.PRIVATE_KEY2}`],
+      accounts: [`0x${process.env.PRIVATE_KEY}`],
     },
     mainnet: {
       url: `${process.env.ALCHEMY_MAINNET_URL}`,

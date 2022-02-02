@@ -1,69 +1,42 @@
 // const { ethers } = require("hardhat");
 const axios = require('axios');
 const SourcifyJS = require('sourcify-js');
-const { promises } = require("fs");
-const { diff } = require('json-diff');
+const fs = require("fs");
+const { promises } = fs
+
+const DiamondDifferentiator = require('./lib/DiamondDifferentiator.js')
+const {
+  loupe,
+  generateLightFile,
+  verify,
+  createDiamondFileFromSources,
+  getDiamondJson,
+  setDiamondJson,
+} = require('./lib/utils.js')
+
 require('dotenv').config();
 
-async function loupe(args) {
-  const diamondLoupeFacet = await ethers.getContractAt('DiamondLoupeFacet', args.address)
-  const facets = await diamondLoupeFacet.facets()
-
-  let contracts = {}
-  let diamond = {}
-
-  for await (const facet of facets) {
-    const address = facet[0]
-    
-    const sourcify = new SourcifyJS.default()
-
-    let abi
-    let name
-    try {
-      const result = await sourcify.filesTree(address, 4);
-      const response = await axios.get(result.files[0])
-      abi = response.data.output.abi
-      name = Object.values(response.data.settings.compilationTarget)[0]
-    } catch(e) {
-      continue;
+task("diamond:new", "Init diamond file from sources")
+  .addFlag("fromSources", "Use the solidity files to initialize the diamond.json file")
+  // .addFlag("includeLoupe", "Include loupe facet from default address as remote facet")
+  // .addFlag("includeCut", "Include cut facet from default address as remote facet")
+  .setAction(async (args, hre) => {
+    if (args.fromSources) {
+      console.log(createDiamondFileFromSources())
+    } else {
+      console.log({
+        diamond: {},
+        contracts: {},
+      })
     }
-    
-    let functions = []
-    let events = []
-    for (const obj of abi) {
-      if (obj.type === 'function') {
-        functions.push(obj.name)
-      }
-      if (obj.type === 'event') {
-        events.push(obj.name)
-      }
-    }
-      
-    contracts[name] = {
-      name,
-      address,
-      type: 'remote',
-    }
+    // write file to diamond.json
+  });
 
-    functions.forEach(fn => {
-      diamond[fn] = name
-    })
-  }
-
-  return {
-    diamond,
-    contracts
-  }
-
-}
-
-task("diamond:loupe", "Do stuff with diamonds")
+task("diamond:clone", "Do stuff with diamonds")
   .addParam("address", "The diamond's address")
   .addOptionalParam("o", "The file to create", "diamond.json")
   .setAction(async (args) => {
-    
-    /**@dev issues with getting ABI in loupe() function on a newly deployed and verified diamond */
-
+   
     let output = await loupe(args)
 
     if (args.o) {
@@ -72,36 +45,75 @@ task("diamond:loupe", "Do stuff with diamonds")
     } else {
       console.log(output)
     }
+  });
+
+task("diamond:status", "Compare the local diamond.json with the remote diamond")
+  .addParam("address", "The diamond's address")
+  .addOptionalParam("o", "The file to create", "diamond.json")
+  .setAction(async (args) => {
+    let output1 = await loupe(args)
+
+    let output2 = await fs.promises.readFile('./' + args.o)
+
+    const differentiator = new DiamondDifferentiator(output1, JSON.parse(output2.toString()))
+
+    console.log('\nDiamonds:')
+    console.log('\tAdd: ', differentiator.getFunctionsFacetsToAdd())
+    console.log('\tRemove: ', differentiator.getFunctionsFacetsToRemove())
+    console.log('\tReplace: ', differentiator.getFunctionFacetsToReplace())
+    console.log('\nContracts to deploy:')
+    console.log(differentiator.getContractsToDeploy())
+  });
+
+
+task("diamond:add", "Adds facets and functions to diamond.json")
+  .addFlag("remote", "Add remote facet")
+  .addFlag("local", "Add local facet")
+  .addOptionalParam("o", "The diamond file to output to", "diamond.json")
+  .addOptionalParam("address", "The address of the facet to add")
+  .setAction(
+  async (args, hre) => {
+    if (args.remote && args.local) {
+      return console.log('remote or local, not both')
+    }
+    const diamondJson = await getDiamondJson(args.o)
+    if (args.remote) {
+      const sourcify = new SourcifyJS.default()
+      let {abi, name} = await sourcify.getABI(args.address, 4)
+      
+      diamondJson.contracts[name] = {
+        name,
+        address: args.address,
+        type: "remote"
+      }
+      for(let obj of abi) {
+        if (obj.type === 'function') {
+          diamondJson.diamond[obj.name] = name
+        }
+      }
+      await setDiamondJson(diamondJson, args.o)
+      console.log('ok :)')
+    }
+  });
+
+// diamond:remove
+
+// diamond:replace
+
+// deploy and verify new or changed facets
+task("diamond:cut", "Deploys diamond's changed facets and uploads source code")
+  .addParam("address", "The diamond's address")
+  .addOptionalParam("conceal", "Do not verify the sourcecode", "")
+  .setAction(async (args, hre) => {
+
+    await hre.run("status", args);
+    // if (!args.conceal) {
+    //   await hre.run("sourcify", args);
+    // }
 
   });
 
-async function generateLightFile() {
-  const buildInfo = 'artifacts/build-info'
-  const files = await promises.readdir(buildInfo)
-
-  const buffer = await promises.readFile(`${buildInfo}/${files[0]}`)
-  const string = await buffer.toString()
-  const json = JSON.parse(string)
-  delete json.output.sources
-  for (let path in json.output.contracts) {
-      for (let contract in json.output.contracts[path]) {
-          delete json.output.contracts[path][contract].abi
-          delete json.output.contracts[path][contract].evm
-      }
-  }
-  return json
-}
-
-async function verify(chaindId, contracts) {
-  let json = await generateLightFile()
-  const buffer = Buffer.from(JSON.stringify(json))
-  const sourcify = new SourcifyJS.default('https://staging.sourcify.dev')
-  const result = await sourcify.verify(chaindId, contracts, buffer)
-
-  return result;
-}
-
-task("diamond:verify", "Verify dimaonds")
+/* task("diamond:verify", "Verify dimaonds")
 .addOptionalParam("o", "The file to create", "diamond.json")
 .setAction(async (args) => {
   await hre.run("clean")
@@ -118,207 +130,7 @@ task("diamond:verify", "Verify dimaonds")
     ],
   )
   console.log(output)
-})
-
-
-
-function init(args) {
-
-  const facetsPath = "/contracts/facets/";
-  let files = fs.readdirSync("." + facetsPath);
-
-  let contracts = {}
-  let diamond = {}
-
-  for (const file of files) {
-      const name = file.replace(".sol", "");
-      const abi = hre.artifacts.readArtifactSync(name).abi
-
-      let functions = []
-      let events = []
-      for (const obj of abi) {
-      if (obj.type === 'function') {
-          functions.push(obj.name)
-      }
-      if (obj.type === 'event') {
-        events.push(obj.name)
-      }
-      }
-
-      contracts[name] = {
-        name,
-        // abi,
-        // address,
-        // type: 'local',
-        // functions,
-        // events
-      }
-
-      functions.forEach(fn => {
-        diamond[fn] = name
-      })
-
-  }
-
-  return {
-      diamond,
-      contracts
-  }
-}
-
-function getFunctionsFacetsToAdd(d) {
-
-  let functionsToAdd = Object.keys(d.diamond).filter(fn => {
-      return fn.endsWith('__added')
-  })
-  
-  let functionsFacetsToAdd = functionsToAdd.map(fn => {
-      let obj = {}
-      obj[`${fn.substring(0, fn.length - '__added'.length)}`] = d.diamond[fn]
-      return obj
-  })
-  
-  return functionsFacetsToAdd
-}
-
-function getFunctionsFacetsToRemove(d) {
-
-  let functionsToAdd = Object.keys(d.diamond).filter(fn => {
-      return fn.endsWith('__deleted')
-  })
-  
-  let functionsFacetsToAdd = functionsToAdd.map(fn => {
-      let obj = {}
-      obj[`${fn.substring(0, fn.length - '__deleted'.length)}`] = d.diamond[fn]
-      return obj
-  })
-  
-  return functionsFacetsToAdd
-}
-
-function getFunctionFacetsToReplace(d) {
-  let functionsToReplace = Object.keys(d.diamond).filter(fn => {
-      const facet = d.diamond[fn]
-      return typeof facet === 'object'
-  })
-
-  let functionsFacetsToReplace = functionsToReplace.map(fn => {
-      let obj = {}
-      obj[fn] = d.diamond[fn].__new
-      return obj
-  })
-  
-  return functionsFacetsToReplace
-}
-
-function getContractsToReplace(d) {
-
-  let contractsToReplace = Object.keys(d.contracts).filter(fn => {
-      return d.contracts[fn].hasOwnProperty('address__deleted') && d.contracts[fn].hasOwnProperty('path__added')
-  })
-  
-  let contractsInfoToReplace = contractsToReplace.map(fn => {
-      let obj = {}
-      obj[fn] = {
-          name: fn,
-          type: 'local',
-          path: d.contracts[fn].path__added
-      }
-      return obj
-  })
-  
-  return contractsInfoToReplace
-}
-
-function getContractsToDeploy(d) {
-
-  let contractsToDeploy = Object.keys(d.contracts).filter(fn => {
-      return fn.endsWith('__added') && d.contracts[fn].type === 'local'
-  })
-  
-  let contractsInfoToDeploy = contractsToDeploy.map(fn => {
-      let obj = {}
-      obj[`${fn.substring(0, fn.length - '__added'.length)}`] = d.contracts[fn]
-      return obj
-  })
-  
-  return contractsInfoToDeploy.concat(getContractsToReplace(d))
-}
-
-task("diamond:status", "clone diamond")
-  .addParam("address", "The diamond's address")
-  .addOptionalParam("o", "The file to create", "diamond.json")
-  .setAction(async (args) => {
-    let output1 = await loupe(args)
-
-    let output2 = await fs.promises.readFile('./' + args.o)
-
-    const d = diff(output1, JSON.parse(output2))
-
-    console.log('\nDiamonds:')
-    console.log('\tAdd: ', getFunctionsFacetsToAdd(d))
-    console.log('\tRemove: ', getFunctionsFacetsToRemove(d))
-    console.log('\tReplace: ', getFunctionFacetsToReplace(d))
-    console.log('\nContracts to deploy:')
-    console.log(getContractsToDeploy(d))
-  });
-
-
-
-
-
-
-task("diamond:add", "Adds facets and functions to diamond.json")
-  // .addParam("facets", "The changed facets to add")
-  .addOptionalParam("o", "The diamond file to output to", "diamond.json")
-  .setAction(
-  async (args, hre) => {
-
-    await hre.run("compare", args); // inits facet artifacts to .diamond format
-
-  });
-
-// diamond:remove
-
-// diamond:update
-
-subtask(
-  "compare", "compiles contracts, inits facet artificats, and compares with diamond.json")
-  .setAction(async (args, hre) => {
-    await hre.run("compile");
-
-    let diamond0 = init(args);
-
-    let diamond1 = JSON.parse(fs.readFileSync(args.o));
-
-    for (const obj of Object.entries(diamond1.contracts)) {
-      delete obj[1].address
-      delete obj[1].type
-    }
-
-    console.log(diamond0, diamond1)
-  });
-
-// deploy and verify new or changed facets
-task("diamond:cut", "Deploys diamond's changed facets and uploads source code")
-  .addOptionalParam("conceal", "Do not verify the sourcecode", "")
-  .setAction(async (args, hre) => {
-
-    // if (!args.conceal) {
-    //   await hre.run("sourcify", args);
-    // }
-
-  });
-
-task("diamond:init", "Deploys diamond's changed facets and uploads source code")
-  .addOptionalParam("conceal", "Do not verify the sourcecode", "")
-  .setAction(async (args, hre) => {
-
-    // if (!args.conceal) {
-    //   await hre.run("sourcify", args);
-    // }
-
-  });
+}) */
 
 module.exports = {};
 
