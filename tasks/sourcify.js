@@ -24,14 +24,13 @@ async function generateLightFile() {
   return json
 }
 
-async function inputFiles() {
+async function inputFiles(sourcify) {
   let json = await generateLightFile()
   const buffer = Buffer.from(JSON.stringify(json))
-  const sourcify = new SourcifyJS.default('https://staging.sourcify.dev')
   const result = await sourcify.inputFiles(buffer)
 
   let contracts = []
-  for (contract of result.contracts) {
+  for (let contract of result.contracts) {
     contracts.push({
       name: contract.name,
       verificationId: contract.verificationId,
@@ -40,20 +39,19 @@ async function inputFiles() {
   return contracts;
 }
 
-async function verifyValidated(inputs) {
+async function verifyValidated(sourcify, inputs) {
   // get deployed.diamond.json
   let json = await promises.readFile('./deployed.diamond.json')
   json = JSON.parse(json)
   // match name to input
   let matches = json.map((item, i) => Object.assign({}, item, inputs[i]));
-  for (const contract of matches) {
+  for (let contract of matches) {
     delete contract.name
   }
 
-  // const sourcify = new SourcifyJS.default('https://staging.sourcify.dev')
-  // const result = await sourcify.verifyValidated(matches)
+  const result = await sourcify.verifyValidated(matches);
 
-  return matches;
+  return result;
 
 }
 
@@ -62,13 +60,27 @@ task("sourcify:verify", "input files to sourcify")
   await hre.run("clean")
   await hre.run("compile")
 
+  const sourcify = new SourcifyJS.default()
+
+  let json = await generateLightFile()
+  const buffer = Buffer.from(JSON.stringify(json))
+  let diamondjson = await promises.readFile('./deployed.diamond.json')
+  diamondjson = JSON.parse(diamondjson)
+  const result = await sourcify.verify(4, diamondjson, buffer)
+
+  // let inputs = await inputFiles(sourcify)
+  // let output = await verifyValidated(sourcify, inputs)
   
-  let inputs = await inputFiles()
-  let output = await verifyValidated(inputs)
-  
-  console.log(output)
+  console.log(result)
 })
 
+task("sourcify:get", "input files to sourcify")
+.setAction(async () => {
 
+  const sourcify = new SourcifyJS.default()
+  const result = await sourcify.getABI('0xcdbD9188d1788AFC260785B34A005e2ABadd7868', 4);
+
+  console.log(JSON.stringify(result, null, 2))
+})
 
 module.exports = {};

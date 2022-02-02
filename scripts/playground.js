@@ -10,6 +10,10 @@ async function main () {
   
   let contracts = []
 
+  // deploy interfaces
+
+  // deploy libraries
+
   // deploy DiamondCutFacet
   const DiamondCutFacet = await ethers.getContractFactory('DiamondCutFacet')
   const diamondCutFacet = await DiamondCutFacet.deploy()
@@ -50,7 +54,9 @@ async function main () {
   console.log('Deploying facets')
   const FacetNames = [
     'DiamondLoupeFacet',
-    'OwnershipFacet'
+    'OwnershipFacet',
+    'Test1Facet',
+    'Test2Facet'
   ]
   const cut = []
   for (const FacetName of FacetNames) {
