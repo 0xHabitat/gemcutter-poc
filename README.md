@@ -4,9 +4,9 @@
 Everything you see is under development and it's just a prototype
 
 ## Introduction
-The objective of this repository is to work on a Diamond Framework, that will allow developers to manage diamonds with a few command lines. We imagined a diamond.json file that rappresent the state of the diamond.
+The objective of this repository is to work on a Diamond Framework, it will allow developers to manage diamonds with a few command lines. We imagined a diamond.json file that rappresent the state of the diamond.
 
-An object "functions" (right now is actually called "diamond") that contains the functionSelector and a list of contracts.
+An object "functions" (right now is actually called "diamond") that contains the functionSelector, and a list of contracts.
 This file can be manually change, but we propose using hardhat's tasks to automate some processes.
 
 This file is used by diamond:cut to upgrade the diamond. It compares the modified local file with the remote state of the diamond and processes the differences: add, replace, remove facets and deploy new contracts.
