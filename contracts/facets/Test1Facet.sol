@@ -16,5 +16,5 @@ contract Test1Facet {
     function test1Func10() external pure returns (string memory) {
         return 'ciao';
     }
-    function supportsInterface(bytes4 _interfaceID) external view returns (bool) {}
+    // function supportsInterface(bytes4 _interfaceID) external view returns (bool) {}
 }

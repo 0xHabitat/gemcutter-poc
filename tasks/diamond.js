@@ -15,7 +15,7 @@ async function loupe(args) {
   for await (const facet of facets) {
     const address = facet[0]
     
-    const sourcify = new SourcifyJS.default('https://sourcify.dev')
+    const sourcify = new SourcifyJS.default()
 
     let abi
     let name
@@ -56,6 +56,24 @@ async function loupe(args) {
   }
 
 }
+
+task("diamond:loupe", "Do stuff with diamonds")
+  .addParam("address", "The diamond's address")
+  .addOptionalParam("o", "The file to create", "diamond.json")
+  .setAction(async (args) => {
+    
+    /**@dev issues with getting ABI in loupe() function on a newly deployed and verified diamond */
+
+    let output = await loupe(args)
+
+    if (args.o) {
+      let filename = args.o
+      await promises.writeFile('./' + filename, JSON.stringify(output, null, 2));
+    } else {
+      console.log(output)
+    }
+
+  });
 
 async function generateLightFile() {
   const buildInfo = 'artifacts/build-info'
@@ -227,24 +245,6 @@ function getContractsToDeploy(d) {
   return contractsInfoToDeploy.concat(getContractsToReplace(d))
 }
 
-task("diamond:loupe", "Do stuff with diamonds")
-  .addParam("address", "The diamond's address")
-  .addOptionalParam("o", "The file to create", "diamond.json")
-  .setAction(async (args) => {
-    
-    /**@dev issues with getting ABI in loupe() function on a newly deployed and verified diamond */
-
-    let output = await loupe(args)
-
-    if (args.o) {
-      let filename = args.o
-      await promises.writeFile('./' + filename, JSON.stringify(output, null, 2));
-    } else {
-      console.log(output)
-    }
-
-  });
-
 task("diamond:status", "clone diamond")
   .addParam("address", "The diamond's address")
   .addOptionalParam("o", "The file to create", "diamond.json")
@@ -261,8 +261,12 @@ task("diamond:status", "clone diamond")
     console.log('\tReplace: ', getFunctionFacetsToReplace(d))
     console.log('\nContracts to deploy:')
     console.log(getContractsToDeploy(d))
-
   });
+
+
+
+
+
 
 task("diamond:add", "Adds facets and functions to diamond.json")
   // .addParam("facets", "The changed facets to add")
@@ -296,14 +300,23 @@ subtask(
   });
 
 // deploy and verify new or changed facets
-task("diamond:publish", "Deploys diamond's changed facets and uploads source code")
-  .addParam("address", "The diamond address")
+task("diamond:cut", "Deploys diamond's changed facets and uploads source code")
   .addOptionalParam("conceal", "Do not verify the sourcecode", "")
   .setAction(async (args, hre) => {
 
-    if (!args.conceal) {
-      await hre.run("sourcify", args);
-    }
+    // if (!args.conceal) {
+    //   await hre.run("sourcify", args);
+    // }
+
+  });
+
+task("diamond:init", "Deploys diamond's changed facets and uploads source code")
+  .addOptionalParam("conceal", "Do not verify the sourcecode", "")
+  .setAction(async (args, hre) => {
+
+    // if (!args.conceal) {
+    //   await hre.run("sourcify", args);
+    // }
 
   });
 

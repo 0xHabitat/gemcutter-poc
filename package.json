@@ -17,6 +17,6 @@
     "json-diff": "^0.7.1",
     "murmur-128": "^1.0.0",
     "request": "^2.88.2",
-    "sourcify-js": "^1.4.2"
+    "sourcify-js": "^1.5.1"
   }
 }
