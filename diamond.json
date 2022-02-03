@@ -18,28 +18,32 @@
   "contracts": {
     "DiamondCutFacet": {
       "name": "DiamondCutFacet",
-      "address": "0x6B6AA97D26b579a53CA22CAeE2eAe6Cc54D8f063",
+      "address": "0xd6e42684Eb6E20d3534A388e3a8513f7Ddb644b6",
       "type": "remote"
     },
     "DiamondLoupeFacet": {
       "name": "DiamondLoupeFacet",
-      "address": "0x2AA255230EA0FF52367Bc0A208b28CEEF48BA89a",
+      "address": "0xfBE3066e79ae64D11932b4bc6e509A050Db82243",
       "type": "remote"
     },
     "OwnershipFacet": {
       "name": "OwnershipFacet",
-      "address": "0x7aD67A41cbd8575671aA10acE8005c0AC3c8920e",
+      "address": "0xA64B2Cf5be77376837512f47c4D511b09422AaD0",
       "type": "remote"
     },
     "Test1Facet": {
       "name": "Test1Facet",
-      "address": "0x056c69CAC8BF42309A477a85cc039F6E20a9CCe7",
+      "address": "0x27E5B9b310C86a33cF648a8707077431Fb0FE5A6",
       "type": "remote"
     },
     "Test99Facet": {
       "name": "Test99Facet",
       "address": "0xcf7F77859a5c4286f838bCD7c88d17357Bf2ccE3",
       "type": "remote"
+    },
+    "LocalFacet": {
+      "name": "LocalFacet",
+      "type": "local"
     }
   }
 }

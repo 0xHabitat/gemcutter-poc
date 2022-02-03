@@ -85,3 +85,52 @@ task("sourcify:get", "get contract's abi from sourcify")
 })
 
 module.exports = {};
+
+
+
+// task("diamond:verify", "Verifies contracts by submitting sourcecode to sourcify and updates contract type in diamond.json")
+//   .addParam("chainId", "The chainId of the deployed contract(s)") // TODO: set default chainId from hardhat.config
+//   .addOptionalParam("o", "The file to edit", "diamond.json")
+//   .setAction(async (args) => {
+//     await hre.run("clean")
+//     await hre.run("compile")
+  
+//     const sourcify = new SourcifyJS.default()
+  
+//     let json = await generateLightFile()
+//     const buffer = Buffer.from(JSON.stringify(json))
+
+//     let contracts = []
+
+//     // verify 'local' type contracts in diamond.json
+//     let diamondjson = await promises.readFile('./diamond.json')
+//     diamondjson = JSON.parse(diamondjson)
+//     for (const contract of Object.values(diamondjson.contracts)) {
+//       // if (contract.type === 'local') {
+//         contracts.push({
+//           name: contract.name,
+//           address: contract.address,
+//         })
+//       // }
+//     }
+//     const result = await sourcify.verify(args.chainId, contracts, buffer)
+
+//     // and change 'local' contract's type to 'remote'
+//     for (const verified of result.contracts) {
+//       if (verified.status === 'perfect') {
+//         for (const contract of Object.values(diamondjson.contracts)) {
+//           if (contract.type === 'local' && verified.address === contract.address) {
+//             Object.assign(contract, {
+//               name: verified.name,
+//               address: verified.address,
+//               type: 'remote'
+//             });
+//           }
+//         }
+//       }
+//     }
+
+//     let filename = args.o
+//     await promises.writeFile('./' + filename, JSON.stringify(diamondjson, null, 2));
+
+//   })

@@ -6614,10 +6614,10 @@ source-map@^0.6.0:
   resolved "https://registry.npmjs.org/source-map/-/source-map-0.6.1.tgz"
   integrity sha512-UjgapumWlbMhkBgzT7Ykc5YXUT46F0iKu8SGXq0bcwP5dz/h0Plj6enJqjz1Zbq2l5WaqYnrVbwWOWMyF3F47g==
 
-sourcify-js@^1.5.1:
-  version "1.5.1"
-  resolved "https://registry.yarnpkg.com/sourcify-js/-/sourcify-js-1.5.1.tgz#cc3cb756ca88a1f1925f009b7559d74b74356772"
-  integrity sha512-aeeERlBB4fM2GrC09tQVihL46CutWUQUCRWWTyWUZWpmnTnl0nnKG4sQCGXqtZJceayKzBMUM1j0ZaFAvrIEVw==
+sourcify-js@^1.5.2:
+  version "1.5.2"
+  resolved "https://registry.yarnpkg.com/sourcify-js/-/sourcify-js-1.5.2.tgz#043affed18b7c9c0f97b6a64bcca3c1ada7baa74"
+  integrity sha512-z0V54HsjNYrD4L9T/T4tBuVw5alpUskWb1ZuYHedLrMImHaIKy/PiBbpQIRq8zJWcWkP1ZE9hfPkx6/TKYRQtg==
   dependencies:
     axios "^0.25.0"
     form-data "^4.0.0"

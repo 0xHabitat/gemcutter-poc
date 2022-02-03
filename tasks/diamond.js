@@ -101,64 +101,58 @@ task("diamond:add", "Adds facets and functions to diamond.json")
 // diamond:replace
 
 // deploy and verify new or changed facets
-task("diamond:cut", "Deploys diamond's changed facets and uploads source code")
+task("diamond:cut", "Compare the local diamond.json with the remote diamond")
   .addParam("address", "The diamond's address")
-  .addOptionalParam("conceal", "Do not verify the sourcecode", "")
+  .addOptionalParam("o", "The file to create", "diamond.json")
   .setAction(async (args, hre) => {
-
-    await hre.run("status", args);
-    // if (!args.conceal) {
-    //   await hre.run("diamond:verify", args);
-    // }
-
-  });
-
-task("diamond:verify", "Verifies contracts by submitting sourcecode to sourcify and updates contract type in diamond.json")
-  .addParam("chainId", "The chainId of the deployed contract(s)") // TODO: set default chainId from hardhat.config
-  .addOptionalParam("o", "The file to edit", "diamond.json")
-  .setAction(async (args) => {
     await hre.run("clean")
     await hre.run("compile")
-  
+
+    let output1 = await loupe(args)
+
+    let output2 = await fs.promises.readFile('./' + args.o)
+
+    const differentiator = new DiamondDifferentiator(output1, JSON.parse(output2.toString()))
+
+    const contractsToDeploy = differentiator.getContractsToDeploy();
+
+    // deploy facets
+    let contracts = []
+    // const cut = []
+    for (const contract of contractsToDeploy) {
+      const FacetName = Object.keys(contract)[0]
+      const Facet = await ethers.getContractFactory(FacetName)
+      const facet = await Facet.deploy()
+      await facet.deployed()
+      console.log(`${FacetName} deployed: ${facet.address}`)
+
+      contracts.push({
+        name: contract[FacetName].name,
+        address: facet.address
+        //chainId
+      })
+      // cut.push({
+      //   facetAddress: facet.address,
+      //   action: FacetCutAction.Add,
+      //   functionSelectors: getSelectors(facet)
+      // })
+      
+    }
+
+    //verify facets
     const sourcify = new SourcifyJS.default()
-  
-    let json = await generateLightFile()
+
+    let json = await generateLightFile() // build-info
     const buffer = Buffer.from(JSON.stringify(json))
 
-    let contracts = []
+    const result = await sourcify.verify(4, contracts, buffer)
 
-    // verify 'local' type contracts in diamond.json
-    let diamondjson = await promises.readFile('./diamond.json')
-    diamondjson = JSON.parse(diamondjson)
-    for (const contract of Object.values(diamondjson.contracts)) {
-      if (contract.type === 'local') {
-        contracts.push({
-          name: contract.name,
-          address: contract.address,
-        })
-      }
-    }
-    const result = await sourcify.verify(args.chainId, contracts, buffer)
+    console.log(result)
+    
 
-    // and change 'local' contract's type to 'remote'
-    for (const verified of result.contracts) {
-      if (verified.status === 'perfect') {
-        for (const contract of Object.values(diamondjson.contracts)) {
-          if (contract.type === 'local' && verified.address === contract.address) {
-            Object.assign(contract, {
-              name: verified.name,
-              address: verified.address,
-              type: 'remote'
-            });
-          }
-        }
-      }
-    }
+    // cut facets
 
-    let filename = args.o
-    await promises.writeFile('./' + filename, JSON.stringify(diamondjson, null, 2));
-
-  })
+  });
 
 module.exports = {};
 
