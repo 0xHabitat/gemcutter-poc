@@ -127,6 +127,7 @@ task("diamond:verify", "Verifies contracts by submitting sourcecode to sourcify 
 
     let contracts = []
 
+    // verify 'local' type contracts in diamond.json
     let diamondjson = await promises.readFile('./diamond.json')
     diamondjson = JSON.parse(diamondjson)
     for (const contract of Object.values(diamondjson.contracts)) {
@@ -139,7 +140,7 @@ task("diamond:verify", "Verifies contracts by submitting sourcecode to sourcify 
     }
     const result = await sourcify.verify(args.chainId, contracts, buffer)
 
-    // and change local contract's type to 'remote'
+    // and change 'local' contract's type to 'remote'
     for (const verified of result.contracts) {
       if (verified.status === 'perfect') {
         for (const contract of Object.values(diamondjson.contracts)) {
