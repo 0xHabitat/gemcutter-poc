@@ -108,29 +108,56 @@ task("diamond:cut", "Deploys diamond's changed facets and uploads source code")
 
     await hre.run("status", args);
     // if (!args.conceal) {
-    //   await hre.run("sourcify", args);
+    //   await hre.run("diamond:verify", args);
     // }
 
   });
 
-/* task("diamond:verify", "Verify dimaonds")
-.addOptionalParam("o", "The file to create", "diamond.json")
-.setAction(async (args) => {
-  await hre.run("clean")
-  await hre.run("compile")
+task("diamond:verify", "Verifies contracts by submitting sourcecode to sourcify and updates contract type in diamond.json")
+  .addParam("chainId", "The chainId of the deployed contract(s)") // TODO: set default chainId from hardhat.config
+  .addOptionalParam("o", "The file to edit", "diamond.json")
+  .setAction(async (args) => {
+    await hre.run("clean")
+    await hre.run("compile")
   
-  let output = await verify(
-    '4', 
-    [
-      {
-          name: 'Diamond',
-          address: '0xcdbD9188d1788AFC260785B34A005e2ABadd7868'
-      },
+    const sourcify = new SourcifyJS.default()
+  
+    let json = await generateLightFile()
+    const buffer = Buffer.from(JSON.stringify(json))
 
-    ],
-  )
-  console.log(output)
-}) */
+    let contracts = []
+
+    let diamondjson = await promises.readFile('./diamond.json')
+    diamondjson = JSON.parse(diamondjson)
+    for (const contract of Object.values(diamondjson.contracts)) {
+      if (contract.type === 'local') {
+        contracts.push({
+          name: contract.name,
+          address: contract.address,
+        })
+      }
+    }
+    const result = await sourcify.verify(args.chainId, contracts, buffer)
+
+    // and change local contract's type to 'remote'
+    for (const verified of result.contracts) {
+      if (verified.status === 'perfect') {
+        for (const contract of Object.values(diamondjson.contracts)) {
+          if (contract.type === 'local' && verified.address === contract.address) {
+            Object.assign(contract, {
+              name: verified.name,
+              address: verified.address,
+              type: 'remote'
+            });
+          }
+        }
+      }
+    }
+
+    let filename = args.o
+    await promises.writeFile('./' + filename, JSON.stringify(diamondjson, null, 2));
+
+  })
 
 module.exports = {};
 

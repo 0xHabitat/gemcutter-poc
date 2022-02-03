@@ -40,8 +40,8 @@ async function inputFiles(sourcify) {
 }
 
 async function verifyValidated(sourcify, inputs) {
-  // get deployed.diamond.json
-  let json = await promises.readFile('./deployed.diamond.json')
+  // get deployments.json
+  let json = await promises.readFile('./deployments.json')
   json = JSON.parse(json)
   // match name to input
   let matches = json.map((item, i) => Object.assign({}, item, inputs[i]));
@@ -55,6 +55,7 @@ async function verifyValidated(sourcify, inputs) {
 
 }
 
+// use diamond:verify task instead
 task("sourcify:verify", "input files to sourcify")
 .setAction(async () => {
   await hre.run("clean")
@@ -64,17 +65,17 @@ task("sourcify:verify", "input files to sourcify")
 
   let json = await generateLightFile()
   const buffer = Buffer.from(JSON.stringify(json))
-  let diamondjson = await promises.readFile('./deployed.diamond.json')
+  let diamondjson = await promises.readFile('./deployments.json')
   diamondjson = JSON.parse(diamondjson)
-  const result = await sourcify.verify(4, diamondjson, buffer)
+  // const result = await sourcify.verify(4, diamondjson, buffer)
 
   // let inputs = await inputFiles(sourcify)
   // let output = await verifyValidated(sourcify, inputs)
   
-  console.log(result)
+  console.log(diamondjson)
 })
 
-task("sourcify:get", "input files to sourcify")
+task("sourcify:get", "get contract's abi from sourcify")
 .setAction(async () => {
 
   const sourcify = new SourcifyJS.default()
