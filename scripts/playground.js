@@ -44,7 +44,7 @@ async function main () {
   await diamondInit.deployed()
   console.log('DiamondInit deployed:', diamondInit.address)
   contracts.push({ 
-    name: 'DimaondInit',
+    name: 'DiamondInit',
     address: diamondInit.address,
     chainId: '4'
   })
@@ -92,7 +92,7 @@ async function main () {
   }
   console.log('Completed diamond cut')
   
-  await promises.writeFile('./' + 'deployed.diamond.json', JSON.stringify(contracts, null, 2));
+  await promises.writeFile('./' + 'deployments.json', JSON.stringify(contracts, null, 2));
 }
 
 // We recommend this pattern to be able to use async/await everywhere

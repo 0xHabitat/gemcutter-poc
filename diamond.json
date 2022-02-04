@@ -10,36 +10,32 @@
     "transferOwnership": "OwnershipFacet",
     "test1Func1": "Test1Facet",
     "test1Func10": "Test1Facet",
-    "test1Func2": "Test1Facet",
-    "test99Func0": "Test99Facet",
-    "test99Func1": "Test99Facet",
-    "test99Func2": "Test99Facet"
+    "test1Func2": "Test1Facet"
   },
   "contracts": {
     "DiamondCutFacet": {
       "name": "DiamondCutFacet",
-      "address": "0x6B6AA97D26b579a53CA22CAeE2eAe6Cc54D8f063",
+      "address": "0x42E6Fb727e3be7b9Ea2e88397a2beB88Acc37398",
       "type": "remote"
     },
     "DiamondLoupeFacet": {
       "name": "DiamondLoupeFacet",
-      "address": "0x2AA255230EA0FF52367Bc0A208b28CEEF48BA89a",
+      "address": "0x830cf2287227e01Adf192a1Adbbe39A8E206cA40",
       "type": "remote"
     },
     "OwnershipFacet": {
       "name": "OwnershipFacet",
-      "address": "0x7aD67A41cbd8575671aA10acE8005c0AC3c8920e",
+      "address": "0xaceF92e200d6Dc6ce4B6832aaB55F35EDc5737D0",
       "type": "remote"
     },
     "Test1Facet": {
       "name": "Test1Facet",
-      "address": "0x056c69CAC8BF42309A477a85cc039F6E20a9CCe7",
+      "address": "0x39F8656E0c1aC4e664a043849e69511179519178",
       "type": "remote"
     },
-    "Test99Facet": {
-      "name": "Test99Facet",
-      "address": "0xcf7F77859a5c4286f838bCD7c88d17357Bf2ccE3",
-      "type": "remote"
+    "LocalFacet": {
+      "name": "LocalFacet",
+      "type": "local"
     }
   }
 }

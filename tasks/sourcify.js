@@ -40,8 +40,8 @@ async function inputFiles(sourcify) {
 }
 
 async function verifyValidated(sourcify, inputs) {
-  // get deployed.diamond.json
-  let json = await promises.readFile('./deployed.diamond.json')
+  // get deployments.json
+  let json = await promises.readFile('./deployments.json')
   json = JSON.parse(json)
   // match name to input
   let matches = json.map((item, i) => Object.assign({}, item, inputs[i]));
@@ -55,6 +55,7 @@ async function verifyValidated(sourcify, inputs) {
 
 }
 
+// use diamond:verify task instead
 task("sourcify:verify", "input files to sourcify")
 .setAction(async () => {
   await hre.run("clean")
@@ -64,7 +65,7 @@ task("sourcify:verify", "input files to sourcify")
 
   let json = await generateLightFile()
   const buffer = Buffer.from(JSON.stringify(json))
-  let diamondjson = await promises.readFile('./deployed.diamond.json')
+  let diamondjson = await promises.readFile('./deployments.json')
   diamondjson = JSON.parse(diamondjson)
   const result = await sourcify.verify(4, diamondjson, buffer)
 
@@ -74,7 +75,7 @@ task("sourcify:verify", "input files to sourcify")
   console.log(result)
 })
 
-task("sourcify:get", "input files to sourcify")
+task("sourcify:get", "get contract's abi from sourcify")
 .setAction(async () => {
 
   const sourcify = new SourcifyJS.default()
@@ -84,3 +85,52 @@ task("sourcify:get", "input files to sourcify")
 })
 
 module.exports = {};
+
+
+
+// task("diamond:verify", "Verifies contracts by submitting sourcecode to sourcify and updates contract type in diamond.json")
+//   .addParam("chainId", "The chainId of the deployed contract(s)") // TODO: set default chainId from hardhat.config
+//   .addOptionalParam("o", "The file to edit", "diamond.json")
+//   .setAction(async (args) => {
+//     await hre.run("clean")
+//     await hre.run("compile")
+  
+//     const sourcify = new SourcifyJS.default()
+  
+//     let json = await generateLightFile()
+//     const buffer = Buffer.from(JSON.stringify(json))
+
+//     let contracts = []
+
+//     // verify 'local' type contracts in diamond.json
+//     let diamondjson = await promises.readFile('./diamond.json')
+//     diamondjson = JSON.parse(diamondjson)
+//     for (const contract of Object.values(diamondjson.contracts)) {
+//       // if (contract.type === 'local') {
+//         contracts.push({
+//           name: contract.name,
+//           address: contract.address,
+//         })
+//       // }
+//     }
+//     const result = await sourcify.verify(args.chainId, contracts, buffer)
+
+//     // and change 'local' contract's type to 'remote'
+//     for (const verified of result.contracts) {
+//       if (verified.status === 'perfect') {
+//         for (const contract of Object.values(diamondjson.contracts)) {
+//           if (contract.type === 'local' && verified.address === contract.address) {
+//             Object.assign(contract, {
+//               name: verified.name,
+//               address: verified.address,
+//               type: 'remote'
+//             });
+//           }
+//         }
+//       }
+//     }
+
+//     let filename = args.o
+//     await promises.writeFile('./' + filename, JSON.stringify(diamondjson, null, 2));
+
+//   })
