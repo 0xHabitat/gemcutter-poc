@@ -10,7 +10,9 @@
     "transferOwnership": "OwnershipFacet",
     "test1Func1": "Test1Facet",
     "test1Func10": "Test1Facet",
-    "test1Func2": "Test1Facet"
+    "test1Func2": "LocalFacet",
+    "local2Func3": "LocalFacet",
+    "local2Func12": "LocalFacet"
   },
   "contracts": {
     "DiamondCutFacet": {

@@ -16,9 +16,10 @@ module.exports = class DiamondDifferentiator {
     })
 
     let functionsFacetsToAdd = functionsToAdd.map(fn => {
-      let obj = {}
-      obj[`${fn.substring(0, fn.length - '__added'.length)}`] = this.d.diamond[fn]
-      return obj
+      return {
+        fn: `${fn.substring(0, fn.length - '__added'.length)}`,
+        facet: this.d.diamond[fn]
+      }
     })
 
     return functionsFacetsToAdd
@@ -33,9 +34,10 @@ module.exports = class DiamondDifferentiator {
     })
 
     let functionsFacetsToAdd = functionsToAdd.map(fn => {
-      let obj = {}
-      obj[`${fn.substring(0, fn.length - '__deleted'.length)}`] = this.d.diamond[fn]
-      return obj
+      return {
+        fn: `${fn.substring(0, fn.length - '__deleted'.length)}`,
+        facet: this.d.diamond[fn]
+      }
     })
 
     return functionsFacetsToAdd
@@ -51,9 +53,10 @@ module.exports = class DiamondDifferentiator {
     })
 
     let functionsFacetsToReplace = functionsToReplace.map(fn => {
-      let obj = {}
-      obj[fn] = this.d.diamond[fn].__new
-      return obj
+      return {
+        fn,
+        facet: this.d.diamond[fn].__new
+      }
     })
 
     return functionsFacetsToReplace
@@ -68,13 +71,11 @@ module.exports = class DiamondDifferentiator {
     })
 
     let contractsInfoToReplace = contractsToReplace.map(fn => {
-      let obj = {}
-      obj[fn] = {
+      return {
         name: fn,
         type: 'local',
         path: this.d.contracts[fn].path__added
       }
-      return obj
     })
 
     return contractsInfoToReplace
@@ -89,9 +90,7 @@ module.exports = class DiamondDifferentiator {
     })
 
     let contractsInfoToDeploy = contractsToDeploy.map(fn => {
-      let obj = {}
-      obj[`${fn.substring(0, fn.length - '__added'.length)}`] = this.d.contracts[fn]
-      return obj
+      return this.d.contracts[fn]
     })
 
     return contractsInfoToDeploy.concat(this.getContractsToReplace(this.d))

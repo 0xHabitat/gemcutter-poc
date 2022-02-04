@@ -11,4 +11,7 @@ contract LocalFacet {
     function local2Func7() external {}
 
     function local2Func12() external {}
+
+    function test1Func2() external {}
+
 }

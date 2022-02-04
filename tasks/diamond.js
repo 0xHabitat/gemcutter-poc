@@ -4,7 +4,7 @@ const SourcifyJS = require('sourcify-js');
 const fs = require("fs");
 const { promises } = fs
 
-const { getSelectors, FacetCutAction } = require('../scripts/libraries/diamond.js')
+const { getSelectors, FacetCutAction, getSelector } = require('../scripts/libraries/diamond.js')
 const DiamondDifferentiator = require('./lib/DiamondDifferentiator.js')
 const {
   loupe,
@@ -101,6 +101,30 @@ task("diamond:add", "Adds facets and functions to diamond.json")
 
 // diamond:replace
 
+async function deployAndVerifyFacetsFromDiff(facetsToDeployAndVerify) {
+  /**@notice deploy new facets */
+  console.log('Deploying facets...')
+  let contracts = []
+  for (const contract of facetsToDeployAndVerify) {
+    const FacetName = contract.name
+    const Facet = await ethers.getContractFactory(FacetName)
+    const facet = await Facet.deploy()
+    await facet.deployed()
+    contracts.push({
+      name: contract.name,
+      facet
+    })
+    console.log(`[OK] Facet '${contract.name}' deployed with address ${facet.address}`)
+  }
+
+  console.log('Starting verification process on Sourcify...')
+  /**@notice verify contracts */
+  let json = await generateLightFile()
+  await verify(4, contracts, json)
+  console.log('[OK] Deployed facets verified')
+  return contracts
+}
+
 // deploy and verify new or changed facets
 task("diamond:cut", "Compare the local diamond.json with the remote diamond")
   .addParam("address", "The diamond's address")
@@ -110,39 +134,40 @@ task("diamond:cut", "Compare the local diamond.json with the remote diamond")
     await hre.run("compile")
 
     /**@notice get contracts to deploy by comparing local and remote diamond.json */
+    console.log('Louping diamond...')
     let output1 = await loupe(args)
+    console.log('[OK] Diamond louped')
     let output2 = await fs.promises.readFile('./' + args.o)
     const differentiator = new DiamondDifferentiator(output1, JSON.parse(output2.toString()))
-    const contractsToDeploy = differentiator.getContractsToDeploy();
+    const facetsToDeployAndVerify = differentiator.getContractsToDeploy();
 
-    /**@notice deploy new facets */
-    let contracts = []
+    const verifiedFacets = await deployAndVerifyFacetsFromDiff(facetsToDeployAndVerify)
+
+    const facetsToAdd = differentiator.getFunctionsFacetsToAdd()
+    const facetsToRemove = differentiator.getFunctionsFacetsToRemove()
+    const facetsToReplace = differentiator.getFunctionFacetsToReplace()
+
+    /**@notice create functionSelectors for functions needed to add */
     let cut = []
-    for (const contract of contractsToDeploy) {
-      const FacetName = Object.keys(contract)[0]
-      const Facet = await ethers.getContractFactory(FacetName)
-      const facet = await Facet.deploy()
-      await facet.deployed()
-      console.log(`${FacetName} deployed: ${facet.address}`)
+    await facetsToAdd.forEach(async f => {
 
-      // verify
-      contracts.push({
-        name: contract[FacetName].name,
-        address: facet.address
-      })
-      // cut
-      cut.push({
-        facetAddress: facet.address,
-        action: FacetCutAction.Add,
-        functionSelectors: getSelectors(facet)
-      })
-      
-    }
+      let facetVerified = verifiedFacets.find(facet => facet.name === f.facet)
+      let fnNamesSelectors = await getFunctionsNamesSelectorsFromFacet(facetVerified.facet)
+      let fn = fnNamesSelectors.find(ns => ns.name === f.fn)
 
-    /**@notice verify contracts */
-    let json = await generateLightFile()
-    await verify(4, contracts, json)
-    
+      let cutAddressIndex = cut.findIndex(c => c.facetAddress === facetVerified.facet.address && c.action === FacetCutAction.Add)
+      if(cutAddressIndex === -1) {
+        cut.push({
+          facetAddress: facetVerified.facet.address,
+          action: FacetCutAction.Add,
+          functionSelectors: [fn.selector]
+        })
+      } else {
+        cut[cutAddressIndex].functionSelectors.push(fn.selector)
+      }
+    })
+
+    console.log(cut)
 
     /**@notice cut in facets */
     // TODO: get diamondInitAddress from somewhere else
@@ -158,22 +183,42 @@ task("diamond:cut", "Compare the local diamond.json with the remote diamond")
     let diamondInit = await hre.ethers.getContractFactory('DiamondInit')
 
     // do the cut
-    console.log('Diamond Cut:', cut)
+    //console.log('Diamond Cut:', cut)
     const diamondCut = await ethers.getContractAt('IDiamondCut', args.address)
     let tx
     let receipt
     // call to init function
     let functionCall = diamondInit.interface.encodeFunctionData('init')
-    tx = await diamondCut.diamondCut(cut, diamondInitAddress, functionCall, {gasLimit: 10000000})
+    
+    /* tx = await diamondCut.diamondCut(cut, diamondInitAddress, functionCall, {gasLimit: 10000000})
     console.log('Diamond cut tx: ', tx.hash)
 
     receipt = await tx.wait()
     if (!receipt.status) {
       throw Error(`Diamond upgrade failed: ${tx.hash}`)
     }
-    console.log('Completed diamond cut')
+    console.log('Completed diamond cut') */
 
     // and input facet's address and type into diamond.json
+  });
+
+  async function getFunctionsNamesSelectorsFromFacet(contract) {
+    const signatures = Object.keys(contract.interface.functions)
+    const names = signatures.reduce((acc, val) => {
+      if (val !== 'init(bytes)') {
+        acc.push({
+          name: val.substr(0, val.indexOf('(')),
+          selector: contract.interface.getSighash(val)
+        })
+      }
+      return acc
+    }, [])
+    return names
+  }
+
+  task("diamond:selector", "Compare the local diamond.json with the remote diamond")
+  .setAction(async (args, hre) => {
+    console.log(await getFunctionsNamesSelectorsFromAddress('LocalFacet', '0x3C75338A14c42a20440f4240f46839853131dFED'))
   });
 
 module.exports = {};
