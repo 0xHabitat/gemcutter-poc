@@ -75,10 +75,10 @@ module.exports = {
     return json
   },
   
-  async verify(chaindId, contracts) {
-    let json = await this.generateLightFile()
+  async verify(chaindId, contracts, json) {
+    // let json = await this.generateLightFile()
     const buffer = Buffer.from(JSON.stringify(json))
-    const sourcify = new SourcifyJS.default('https://staging.sourcify.dev')
+    const sourcify = new SourcifyJS.default('https://sourcify.dev')
     const result = await sourcify.verify(chaindId, contracts, buffer)
 
     return result;

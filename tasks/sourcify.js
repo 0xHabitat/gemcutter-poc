@@ -67,12 +67,12 @@ task("sourcify:verify", "input files to sourcify")
   const buffer = Buffer.from(JSON.stringify(json))
   let diamondjson = await promises.readFile('./deployments.json')
   diamondjson = JSON.parse(diamondjson)
-  // const result = await sourcify.verify(4, diamondjson, buffer)
+  const result = await sourcify.verify(4, diamondjson, buffer)
 
   // let inputs = await inputFiles(sourcify)
   // let output = await verifyValidated(sourcify, inputs)
   
-  console.log(diamondjson)
+  console.log(result)
 })
 
 task("sourcify:get", "get contract's abi from sourcify")

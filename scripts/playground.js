@@ -44,7 +44,7 @@ async function main () {
   await diamondInit.deployed()
   console.log('DiamondInit deployed:', diamondInit.address)
   contracts.push({ 
-    name: 'DimaondInit',
+    name: 'DiamondInit',
     address: diamondInit.address,
     chainId: '4'
   })
