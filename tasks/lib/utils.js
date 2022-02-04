@@ -24,7 +24,7 @@ module.exports = {
     const facets = await diamondLoupeFacet.facets()
 
     let contracts = {}
-    let diamond = {}
+    let functionSelectors = {}
 
     for await (const facet of facets) {
       const address = facet[0]
@@ -48,12 +48,14 @@ module.exports = {
       }
 
       functions.forEach(fn => {
-        diamond[fn] = name
+        functionSelectors[fn] = name
       })
     }
 
     return {
-      diamond,
+      address: args.address,
+      chaindId: 4, // TODO: how to get chainId
+      functionSelectors,
       contracts
     }
 
@@ -128,5 +130,18 @@ module.exports = {
       diamond,
       contracts
     }
+  },
+  async getFunctionsNamesSelectorsFromFacet(contract) {
+    const signatures = Object.keys(contract.interface.functions)
+    const names = signatures.reduce((acc, val) => {
+      if (val !== 'init(bytes)') {
+        acc.push({
+          name: val.substr(0, val.indexOf('(')),
+          selector: contract.interface.getSighash(val)
+        })
+      }
+      return acc
+    }, [])
+    return names
   }
 }

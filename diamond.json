@@ -1,5 +1,7 @@
 {
-  "diamond": {
+  "address": "0xf63e56f13C4dE8F451Dc7E0AC65F479A4Fa7D7f4",
+  "chainId": 4,
+  "functionSelectors": {
     "diamondCut": "DiamondCutFacet",
     "facetAddress": "DiamondLoupeFacet",
     "facetAddresses": "DiamondLoupeFacet",

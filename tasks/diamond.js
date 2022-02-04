@@ -13,6 +13,7 @@ const {
   createDiamondFileFromSources,
   getDiamondJson,
   setDiamondJson,
+  getFunctionsNamesSelectorsFromFacet
 } = require('./lib/utils.js')
 
 require('dotenv').config();
@@ -89,7 +90,7 @@ task("diamond:add", "Adds facets and functions to diamond.json")
       }
       for(let obj of abi) {
         if (obj.type === 'function') {
-          diamondJson.diamond[obj.name] = name
+          diamondJson.functionSelectors[obj.name] = name
         }
       }
       await setDiamondJson(diamondJson, args.o)
@@ -202,24 +203,7 @@ task("diamond:cut", "Compare the local diamond.json with the remote diamond")
     // and input facet's address and type into diamond.json
   });
 
-  async function getFunctionsNamesSelectorsFromFacet(contract) {
-    const signatures = Object.keys(contract.interface.functions)
-    const names = signatures.reduce((acc, val) => {
-      if (val !== 'init(bytes)') {
-        acc.push({
-          name: val.substr(0, val.indexOf('(')),
-          selector: contract.interface.getSighash(val)
-        })
-      }
-      return acc
-    }, [])
-    return names
-  }
-
-  task("diamond:selector", "Compare the local diamond.json with the remote diamond")
-  .setAction(async (args, hre) => {
-    console.log(await getFunctionsNamesSelectorsFromAddress('LocalFacet', '0x3C75338A14c42a20440f4240f46839853131dFED'))
-  });
+  
 
 module.exports = {};
 
