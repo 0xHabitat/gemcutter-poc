@@ -61,7 +61,7 @@ task("sourcify:verify", "input files to sourcify")
   await hre.run("clean")
   await hre.run("compile")
 
-  const sourcify = new SourcifyJS.default()
+  const sourcify = new SourcifyJS.default('http://localhost:8990')
 
   let json = await generateLightFile()
   const buffer = Buffer.from(JSON.stringify(json))
@@ -78,7 +78,7 @@ task("sourcify:verify", "input files to sourcify")
 task("sourcify:get", "get contract's abi from sourcify")
 .setAction(async () => {
 
-  const sourcify = new SourcifyJS.default()
+  const sourcify = new SourcifyJS.default('http://localhost:8990')
   const result = await sourcify.getABI('0xcdbD9188d1788AFC260785B34A005e2ABadd7868', 4);
 
   console.log(JSON.stringify(result, null, 2))

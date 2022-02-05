@@ -1,5 +1,5 @@
 {
-  "address": "0xf63e56f13C4dE8F451Dc7E0AC65F479A4Fa7D7f4",
+  "address": "0x4f94986D95aEBa84e8CeCba5f3694402207aD004",
   "chainId": 4,
   "functionSelectors": {
     "diamondCut": "DiamondCutFacet",
@@ -8,38 +8,46 @@
     "facetFunctionSelectors": "DiamondLoupeFacet",
     "facets": "DiamondLoupeFacet",
     "supportsInterface": "DiamondLoupeFacet",
+    "local2Func12": "LocalFacet",
+    "local2Func3": "LocalFacet",
+    "local2Func7": "LocalFacet",
     "owner": "OwnershipFacet",
     "transferOwnership": "OwnershipFacet",
     "test1Func1": "Test1Facet",
     "test1Func10": "Test1Facet",
-    "test1Func2": "LocalFacet",
-    "local2Func3": "LocalFacet",
-    "local2Func12": "LocalFacet"
+    "test2Func1": "Test2Facet",
+    "test2Func10": "Test2Facet",
+    "test2Func11": "Test2Facet"
   },
   "contracts": {
     "DiamondCutFacet": {
       "name": "DiamondCutFacet",
-      "address": "0x42E6Fb727e3be7b9Ea2e88397a2beB88Acc37398",
-      "type": "remote"
+      "type": "remote",
+      "address": "0x28356a2c1cBd0F5197F97E9Cdbf3Bd96886c5B60"
     },
     "DiamondLoupeFacet": {
       "name": "DiamondLoupeFacet",
-      "address": "0x830cf2287227e01Adf192a1Adbbe39A8E206cA40",
-      "type": "remote"
-    },
-    "OwnershipFacet": {
-      "name": "OwnershipFacet",
-      "address": "0xaceF92e200d6Dc6ce4B6832aaB55F35EDc5737D0",
-      "type": "remote"
-    },
-    "Test1Facet": {
-      "name": "Test1Facet",
-      "address": "0x39F8656E0c1aC4e664a043849e69511179519178",
-      "type": "remote"
+      "type": "remote",
+      "address": "0xCb4392d595825a46D5e07A961FB4A27bd35bC3d4"
     },
     "LocalFacet": {
       "name": "LocalFacet",
       "type": "local"
+    },
+    "OwnershipFacet": {
+      "name": "OwnershipFacet",
+      "type": "remote",
+      "address": "0x6e9B27a77eC19b2aF5A2da28AcD1434b3de4D6EE"
+    },
+    "Test1Facet": {
+      "name": "Test1Facet",
+      "type": "remote",
+      "address": "0x5D7a8f4e0B41cB1A5870E0c6670A27503d873218"
+    },
+    "Test2Facet": {
+      "name": "Test2Facet",
+      "type": "remote",
+      "address": "0xbF14fEF0f9019BAEabd2bF3Bd70ABE066775c6c0"
     }
   }
 }

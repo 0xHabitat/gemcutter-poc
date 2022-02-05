@@ -1,37 +1,37 @@
 [
   {
     "name": "DiamondCutFacet",
-    "address": "0x42E6Fb727e3be7b9Ea2e88397a2beB88Acc37398",
+    "address": "0x28356a2c1cBd0F5197F97E9Cdbf3Bd96886c5B60",
     "chainId": "4"
   },
   {
     "name": "Diamond",
-    "address": "0x547aa83D748ACe3839c108C11E3d5b57147cA7b6",
+    "address": "0x4f94986D95aEBa84e8CeCba5f3694402207aD004",
     "chainId": "4"
   },
   {
     "name": "DiamondInit",
-    "address": "0x5aB44D5896a732Da38238aB7845142630e41576a",
+    "address": "0xEF6fE644C5Ad0b19536389D35f995B0f78c4C5F5",
     "chainId": "4"
   },
   {
     "name": "DiamondLoupeFacet",
-    "address": "0x830cf2287227e01Adf192a1Adbbe39A8E206cA40",
+    "address": "0xCb4392d595825a46D5e07A961FB4A27bd35bC3d4",
     "chainId": "4"
   },
   {
     "name": "OwnershipFacet",
-    "address": "0xaceF92e200d6Dc6ce4B6832aaB55F35EDc5737D0",
+    "address": "0x6e9B27a77eC19b2aF5A2da28AcD1434b3de4D6EE",
     "chainId": "4"
   },
   {
     "name": "Test1Facet",
-    "address": "0x39F8656E0c1aC4e664a043849e69511179519178",
+    "address": "0x5D7a8f4e0B41cB1A5870E0c6670A27503d873218",
     "chainId": "4"
   },
   {
     "name": "Test2Facet",
-    "address": "0x2540f4abC880B028fA1a39a4BaE9c037250C03Cb",
+    "address": "0xbF14fEF0f9019BAEabd2bF3Bd70ABE066775c6c0",
     "chainId": "4"
   }
 ]

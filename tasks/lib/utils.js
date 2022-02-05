@@ -29,7 +29,7 @@ module.exports = {
     for await (const facet of facets) {
       const address = facet[0]
 
-      const sourcify = new SourcifyJS.default()
+      const sourcify = new SourcifyJS.default('http://localhost:8990')
 
       const {abi, name} = await sourcify.getABI(address, 4)
 
@@ -80,7 +80,7 @@ module.exports = {
   async verify(chaindId, contracts, json) {
     // let json = await this.generateLightFile()
     const buffer = Buffer.from(JSON.stringify(json))
-    const sourcify = new SourcifyJS.default('https://sourcify.dev')
+    const sourcify = new SourcifyJS.default('http://localhost:8990')
     const result = await sourcify.verify(chaindId, contracts, buffer)
 
     return result;

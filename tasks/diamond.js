@@ -113,7 +113,7 @@ async function deployAndVerifyFacetsFromDiff(facetsToDeployAndVerify) {
     await facet.deployed()
     contracts.push({
       name: contract.name,
-      facet
+      address: facet.address
     })
     console.log(`[OK] Facet '${contract.name}' deployed with address ${facet.address}`)
   }
@@ -121,7 +121,8 @@ async function deployAndVerifyFacetsFromDiff(facetsToDeployAndVerify) {
   console.log('Starting verification process on Sourcify...')
   /**@notice verify contracts */
   let json = await generateLightFile()
-  await verify(4, contracts, json)
+  
+  const res = await verify(4, contracts, json)
   console.log('[OK] Deployed facets verified')
   return contracts
 }
@@ -139,7 +140,8 @@ task("diamond:cut", "Compare the local diamond.json with the remote diamond")
     let output1 = await loupe(args)
     console.log('[OK] Diamond louped')
     let output2 = await fs.promises.readFile('./' + args.o)
-    const differentiator = new DiamondDifferentiator(output1, JSON.parse(output2.toString()))
+    const diamondJSON = JSON.parse(output2.toString())
+    const differentiator = new DiamondDifferentiator(output1, diamondJSON)
     const facetsToDeployAndVerify = differentiator.getContractsToDeploy();
 
     const verifiedFacets = await deployAndVerifyFacetsFromDiff(facetsToDeployAndVerify)
@@ -149,24 +151,32 @@ task("diamond:cut", "Compare the local diamond.json with the remote diamond")
     const facetsToReplace = differentiator.getFunctionFacetsToReplace()
 
     /**@notice create functionSelectors for functions needed to add */
-    let cut = []
-    await facetsToAdd.forEach(async f => {
-
-      let facetVerified = verifiedFacets.find(facet => facet.name === f.facet)
-      let fnNamesSelectors = await getFunctionsNamesSelectorsFromFacet(facetVerified.facet)
+    let cut = [];
+    for (let f of facetsToAdd) {
+      const sourcify = new SourcifyJS.default('http://localhost:8990')
+  
+      let facetAddress
+      if (diamondJSON.contracts[f.facet].type === 'remote') {
+        facetAddress = diamondJSON.contracts[f.facet].address
+      } else {
+        facetAddress = verifiedFacets.find(vf => vf.name === f.facet).address
+      }
+      const {abi} = await sourcify.getABI(facetAddress, 4)
+      const facet = new ethers.Contract(facetAddress, abi)
+  
+      let fnNamesSelectors = await getFunctionsNamesSelectorsFromFacet(facet)
       let fn = fnNamesSelectors.find(ns => ns.name === f.fn)
-
-      let cutAddressIndex = cut.findIndex(c => c.facetAddress === facetVerified.facet.address && c.action === FacetCutAction.Add)
+      let cutAddressIndex = cut.findIndex(c => c.facetAddress === facetAddress && c.action === FacetCutAction.Add)
       if(cutAddressIndex === -1) {
         cut.push({
-          facetAddress: facetVerified.facet.address,
+          facetAddress: facetAddress,
           action: FacetCutAction.Add,
           functionSelectors: [fn.selector]
         })
       } else {
         cut[cutAddressIndex].functionSelectors.push(fn.selector)
       }
-    })
+    }
 
     console.log(cut)
 
@@ -202,8 +212,6 @@ task("diamond:cut", "Compare the local diamond.json with the remote diamond")
 
     // and input facet's address and type into diamond.json
   });
-
-  
 
 module.exports = {};
 
