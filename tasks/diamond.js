@@ -13,15 +13,16 @@ const {
   createDiamondFileFromSources,
   getDiamondJson,
   setDiamondJson,
-  getFunctionsNamesSelectorsFromFacet
+  getFunctionsNamesSelectorsFromFacet,
+  getAddressFromArgs
 } = require('./lib/utils.js')
 
 require('dotenv').config();
 
-task("diamond:deploy", "Deploy the diamond")
+task("diamond:deploy", "Deploy a new diamond")
   .addOptionalParam("o", "The diamond file to deploy", "diamond.json")
-  .addFlag("includeLoupe", "Include loupe facet from default address as remote facet")
-  .addFlag("includeOwnership", "Include cut facet from default address as remote facet")
+  .addFlag("excludeLoupe", "Include loupe facet from default address as remote facet")
+  .addFlag("excludeOwnership", "Include cut facet from default address as remote facet")
   .setAction(async (args) => {
     await hre.run("clean")
     await hre.run("compile")
@@ -82,8 +83,15 @@ task("diamond:deploy", "Deploy the diamond")
       address: diamondCutFacet.address
     })
 
+    await hre.run('diamond:add', {
+      o: args.o,
+      remote: true,
+      address: diamondInit.address,
+      skipFunctions: true
+    })
+
     const cut = []
-    if (args.includeLoupe) {
+    if (!args.excludeLoupe) {
       console.log('Adding Loupe Facet...')
       const facet = await ethers.getContractAt('DiamondLoupeFacet', '0xCb4392d595825a46D5e07A961FB4A27bd35bC3d4')
       cut.push({
@@ -97,7 +105,7 @@ task("diamond:deploy", "Deploy the diamond")
         address: "0xCb4392d595825a46D5e07A961FB4A27bd35bC3d4"
       })
     }
-    if (args.includeLoupe) {
+    if (!args.excludeOwnership) {
       console.log('Adding Ownership Facet...')
       const facet = await ethers.getContractAt('OwnershipFacet', '0x6e9B27a77eC19b2aF5A2da28AcD1434b3de4D6EE')
       cut.push({
@@ -112,7 +120,7 @@ task("diamond:deploy", "Deploy the diamond")
       })
     }
 
-    if (args.includeLoupe || args.includeLoupe) {
+    if (!args.excludeLoupe || !args.excludeOwnership) {
       const diamondCut = await ethers.getContractAt('IDiamondCut', diamond.address)
       let tx
       let receipt
@@ -134,7 +142,7 @@ task("diamond:clone", "Do stuff with diamonds")
   .addOptionalParam("o", "The file to create", "diamond.json")
   .setAction(async (args) => {
    
-    let output = await loupe(args)
+    let output = await loupe(args.address)
 
     if (args.o) {
       let filename = args.o
@@ -145,14 +153,16 @@ task("diamond:clone", "Do stuff with diamonds")
   });
 
 task("diamond:status", "Compare the local diamond.json with the remote diamond")
-  .addParam("address", "The diamond's address")
+  .addOptionalParam("address", "The diamond's address", "")
   .addOptionalParam("o", "The file to create", "diamond.json")
   .setAction(async (args) => {
-    let output1 = await loupe(args)
+    let address = await getAddressFromArgs(args)
 
-    let output2 = await fs.promises.readFile('./' + args.o)
+    let output1 = await loupe(address)
 
-    const differentiator = new DiamondDifferentiator(output1, JSON.parse(output2.toString()))
+    let output2 = await getDiamondJson(args.o)
+
+    const differentiator = new DiamondDifferentiator(output1, output2)
 
     console.log('\nDiamonds:')
     console.log('\tAdd: ', differentiator.getFunctionsFacetsToAdd())
@@ -168,6 +178,7 @@ task("diamond:add", "Adds facets and functions to diamond.json")
   .addFlag("local", "Add local facet")
   .addOptionalParam("o", "The diamond file to output to", "diamond.json")
   .addOptionalParam("address", "The address of the facet to add")
+  .addFlag("skipFunctions", "Only add contract")
   .setAction(
   async (args, hre) => {
     if (args.remote && args.local) {
@@ -182,9 +193,11 @@ task("diamond:add", "Adds facets and functions to diamond.json")
         address: args.address,
         type: "remote"
       }
-      for(let obj of abi) {
-        if (obj.type === 'function') {
-          diamondJson.functionSelectors[obj.name] = name
+      if (!args.skipFunctions) {
+        for(let obj of abi) {
+          if (obj.type === 'function') {
+            diamondJson.functionSelectors[obj.name] = name
+          }
         }
       }
       await setDiamondJson(diamondJson, args.o)
@@ -223,23 +236,21 @@ async function deployAndVerifyFacetsFromDiff(facetsToDeployAndVerify) {
 
 // deploy and verify new or changed facets
 task("diamond:cut", "Compare the local diamond.json with the remote diamond")
-  .addParam("address", "The diamond's address")
+  .addOptionalParam("address", "The diamond's address", "")
   .addOptionalParam("o", "The file to create", "diamond.json")
   .setAction(async (args, hre) => {
-    const diamondJSON = await getDiamondJson(args.o)
-    if (diamondJSON.type === 'local') {
-      console.log('[ERR] You can not cut a diamond not yet deployed')
-      return
-    }
+    let address = await getAddressFromArgs(args)
+
     await hre.run("clean")
     await hre.run("compile")
 
     /**@notice get contracts to deploy by comparing local and remote diamond.json */
     console.log('Louping diamond...')
-    let output1 = await loupe(args)
+    let output1 = await loupe(address)
     console.log('[OK] Diamond louped')
     
-    const differentiator = new DiamondDifferentiator(output1, diamondJSON)
+    const diamondJson = await getDiamondJson(args.o)
+    const differentiator = new DiamondDifferentiator(output1, diamondJson)
     const facetsToDeployAndVerify = differentiator.getContractsToDeploy();
 
     const verifiedFacets = await deployAndVerifyFacetsFromDiff(facetsToDeployAndVerify)
@@ -252,8 +263,8 @@ task("diamond:cut", "Compare the local diamond.json with the remote diamond")
       const sourcify = new SourcifyJS.default('http://localhost:8990')
   
       let facetAddress
-      if (diamondJSON.contracts[f.facet].type === 'remote') {
-        facetAddress = diamondJSON.contracts[f.facet].address
+      if (diamondJson.contracts[f.facet].type === 'remote') {
+        facetAddress = diamondJson.contracts[f.facet].address
       } else {
         facetAddress = verifiedFacets.find(vf => vf.name === f.facet).address
       }
@@ -279,8 +290,8 @@ task("diamond:cut", "Compare the local diamond.json with the remote diamond")
       const sourcify = new SourcifyJS.default('http://localhost:8990')
   
       let facetAddress
-      if (diamondJSON.contracts[f.facet].type === 'remote') {
-        facetAddress = diamondJSON.contracts[f.facet].address
+      if (diamondJson.contracts[f.facet].type === 'remote') {
+        facetAddress = diamondJson.contracts[f.facet].address
       } else {
         facetAddress = verifiedFacets.find(vf => vf.name === f.facet).address
       }
@@ -306,8 +317,8 @@ task("diamond:cut", "Compare the local diamond.json with the remote diamond")
       const sourcify = new SourcifyJS.default('http://localhost:8990')
   
       let facetAddress
-      if (diamondJSON.contracts[f.facet].type === 'remote') {
-        facetAddress = diamondJSON.contracts[f.facet].address
+      if (diamondJson.contracts[f.facet].type === 'remote') {
+        facetAddress = diamondJson.contracts[f.facet].address
       } else {
         facetAddress = verifiedFacets.find(vf => vf.name === f.facet).address
       }
@@ -328,37 +339,28 @@ task("diamond:cut", "Compare the local diamond.json with the remote diamond")
       }
     }
 
-    console.log(cut)
-
     /**@notice cut in facets */
+    console.log(`Cutting Diamond's facets...`)
     // TODO: get diamondInitAddress from somewhere else
-    let diamondInitAddress;
-    let deployments = await fs.promises.readFile('./deployments.json');
-    deployments = JSON.parse(deployments)
-    for (const deployed of deployments) {
-      if (deployed.name === 'DiamondInit') {
-        diamondInitAddress = deployed.address
-      }
-    }
+    let diamondInitAddress = diamondJson.contracts.DiamondInit.address
     //get diamondInit interface
     let diamondInit = await hre.ethers.getContractFactory('DiamondInit')
 
     // do the cut
     //console.log('Diamond Cut:', cut)
-    const diamondCut = await ethers.getContractAt('IDiamondCut', args.address)
+    const diamondCut = await ethers.getContractAt('IDiamondCut', address)
     let tx
     let receipt
     // call to init function
     let functionCall = diamondInit.interface.encodeFunctionData('init')
     
     tx = await diamondCut.diamondCut(cut, diamondInitAddress, functionCall, {gasLimit: 10000000})
-    console.log('Diamond cut tx: ', tx.hash)
 
     receipt = await tx.wait()
     if (!receipt.status) {
       throw Error(`Diamond upgrade failed: ${tx.hash}`)
     }
-    console.log('Completed diamond cut')
+    console.log('[OK] Completed diamond cut')
 
     // and input facet's address and type into diamond.json
   });

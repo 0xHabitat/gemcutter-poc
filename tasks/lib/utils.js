@@ -2,25 +2,35 @@ const SourcifyJS = require('sourcify-js');
 const fs = require("fs");
 const { promises } = fs
 
-module.exports = {
+let utils = {
+  async getAddressFromArgs(args) {
+    let address
+    if (args.address !== "") {
+      address = args.address
+    } else {
+      let diamondJson = await utils.getDiamondJson(args.o)
+      address = diamondJson.address
+    }
+    return address
+  },
   async getDiamondJson(file) {
     try {
       let diamondFile = await fs.promises.readFile(`./${file}`)
       return JSON.parse(diamondFile)
-    } catch(e) {
+    } catch (e) {
       return false
     }
   },
   async setDiamondJson(json, filename) {
     try {
       await promises.writeFile('./' + filename, JSON.stringify(json, null, 2));
-    } catch(e) {
+    } catch (e) {
       console.log(e)
       return false
     }
   },
-  async loupe(args) {
-    const diamondLoupeFacet = await ethers.getContractAt('DiamondLoupeFacet', args.address)
+  async loupe(address) {
+    const diamondLoupeFacet = await ethers.getContractAt('DiamondLoupeFacet', address)
     const facets = await diamondLoupeFacet.facets()
 
     let contracts = {}
@@ -31,9 +41,9 @@ module.exports = {
 
       const sourcify = new SourcifyJS.default('http://localhost:8990')
 
-      const {abi, name} = await sourcify.getABI(address, 4)
+      const { abi, name } = await sourcify.getABI(address, 4)
 
-      
+
       let functions = []
       for (const obj of abi) {
         if (obj.type === 'function') {
@@ -53,7 +63,7 @@ module.exports = {
     }
 
     return {
-      address: args.address,
+      address: address,
       chaindId: 4, // TODO: how to get chainId
       functionSelectors,
       contracts
@@ -76,7 +86,7 @@ module.exports = {
     }
     return json
   },
-  
+
   async verify(chaindId, contracts, json) {
     // let json = await this.generateLightFile()
     const buffer = Buffer.from(JSON.stringify(json))
@@ -139,3 +149,5 @@ module.exports = {
     return names
   }
 }
+
+module.exports = utils
