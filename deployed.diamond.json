@@ -1,0 +1,55 @@
+{
+  "type": "remote",
+  "address": "0x4f94986D95aEBa84e8CeCba5f3694402207aD004",
+  "chainId": 4,
+  "functionSelectors": {
+    "diamondCut": "DiamondCutFacet",
+    "facetAddress": "DiamondLoupeFacet",
+    "facetAddresses": "DiamondLoupeFacet",
+    "facetFunctionSelectors": "DiamondLoupeFacet",
+    "facets": "DiamondLoupeFacet",
+    "supportsInterface": "DiamondLoupeFacet",
+    "local2Func12": "LocalFacet",
+    "local2Func3": "LocalFacet",
+    "local2Func7": "LocalFacet",
+    "owner": "OwnershipFacet",
+    "transferOwnership": "OwnershipFacet",
+    "test1Func1": "Test1Facet",
+    "test1Func10": "Test1Facet",
+    "test2Func1": "Test2Facet",
+    "test2Func10": "Test2Facet",
+    "test2Func11": "Test2Facet"
+  },
+  "contracts": {
+    "DiamondCutFacet": {
+      "name": "DiamondCutFacet",
+      "type": "remote",
+      "address": "0x28356a2c1cBd0F5197F97E9Cdbf3Bd96886c5B60"
+    },
+    "DiamondLoupeFacet": {
+      "name": "DiamondLoupeFacet",
+      "type": "remote",
+      "address": "0xCb4392d595825a46D5e07A961FB4A27bd35bC3d4"
+    },
+    "LocalFacet": {
+      "name": "LocalFacet",
+      "type": "remote",
+      "address": "0x01699Cca4500467c2995366B0272e7052c37f094"
+    },
+    "OwnershipFacet": {
+      "name": "OwnershipFacet",
+      "type": "remote",
+      "address": "0x6e9B27a77eC19b2aF5A2da28AcD1434b3de4D6EE"
+    },
+    "Test1Facet": {
+      "name": "Test1Facet",
+      "type": "remote",
+      "address": "0x5D7a8f4e0B41cB1A5870E0c6670A27503d873218"
+    },
+    "Test2Facet": {
+      "name": "Test2Facet",
+      "type": "remote",
+      "address": "0xbF14fEF0f9019BAEabd2bF3Bd70ABE066775c6c0"
+    }
+  }
+}

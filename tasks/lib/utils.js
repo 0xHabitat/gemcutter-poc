@@ -92,7 +92,7 @@ module.exports = {
     let files = fs.readdirSync("." + facetsPath);
 
     let contracts = {}
-    let diamond = {}
+    let functionSelectors = {}
 
     for (const file of files) {
       const name = file.replace(".sol", "");
@@ -112,22 +112,16 @@ module.exports = {
       contracts[name] = {
         name,
         type: 'local',
-        path: `contracts/facets/${name}.sol` // TODO: fix this
-        // abi,
-        // address,
-        // type: 'local',
-        // functions,
-        // events
       }
 
       functions.forEach(fn => {
-        diamond[fn] = name
+        functionSelectors[fn] = name
       })
 
     }
 
     return {
-      diamond,
+      functionSelectors,
       contracts
     }
   },
