@@ -21,35 +21,48 @@ require('dotenv').config();
 
 task("diamond:deploy", "Deploy a new diamond")
   .addOptionalParam("o", "The diamond file to deploy", "diamond.json")
-  .addFlag("excludeLoupe", "Include loupe facet from default address as remote facet")
-  .addFlag("excludeOwnership", "Include cut facet from default address as remote facet")
+  .addFlag("new", "Deploy a new Diamond")
+  .addFlag("excludeLoupe", "Exclude loupe facet from default address as remote facet")
+  .addFlag("excludeOwnership", "Exclude cut facet from default address as remote facet")
   .setAction(async (args) => {
     await hre.run("clean")
     await hre.run("compile")
     
     console.log(`Deploying Diamond...`)
     let contractsToVerify = []
-    const diamondJson = {
-      functionSelectors: {},
-      contracts: {},
+
+    let diamondJson
+    if (args.new) {
+      diamondJson = {
+        functionSelectors: {},
+        contracts: {},
+      }
+    } else {
+      diamondJson = await getDiamondJson(args.o)
     }
 
     const accounts = await ethers.getSigners()
     const contractOwner = accounts[0]
 
     // deploy DiamondCutFacet
-    const DiamondCutFacet = await ethers.getContractFactory('DiamondCutFacet')
-    const diamondCutFacet = await DiamondCutFacet.deploy()
-    await diamondCutFacet.deployed()
-
-    contractsToVerify.push({
-      name: 'DiamondCutFacet',
-      address: diamondCutFacet.address
-    })
+    let diamondCutFacetAddress
+    if (args.new) {
+      const DiamondCutFacet = await ethers.getContractFactory('DiamondCutFacet')
+      const diamondCutFacet = await DiamondCutFacet.deploy()
+      diamondCutFacetAddress = diamondCutFacet.address
+      await diamondCutFacet.deployed()
+  
+      contractsToVerify.push({
+        name: 'DiamondCutFacet',
+        address: diamondCutFacetAddress
+      })
+    } else {
+      diamondCutFacetAddress = diamondJson.contracts.DiamondCutFacet.address
+    }
 
     // deploy Diamond
     const Diamond = await ethers.getContractFactory('Diamond')
-    const diamond = await Diamond.deploy(contractOwner.address, diamondCutFacet.address)
+    const diamond = await Diamond.deploy(contractOwner.address, diamondCutFacetAddress)
     await diamond.deployed()
 
     contractsToVerify.push({
@@ -57,18 +70,31 @@ task("diamond:deploy", "Deploy a new diamond")
       address: diamond.address
     })
     
+    let diamondInit
+    /* if (args.new) { */
     const DiamondInit = await ethers.getContractFactory('DiamondInit')
-    const diamondInit = await DiamondInit.deploy()
+    diamondInit = await DiamondInit.deploy()
     await diamondInit.deployed()
 
+    diamondJson.contracts.DiamondInit = {
+      "name": "DiamondInit",
+      "address": diamondInit.address,
+      "type": "remote"
+    }
     contractsToVerify.push({
       name: 'DiamondInit',
       address: diamondInit.address
     })
+    /* } else {
+      const sourcify = new SourcifyJS.default('http://localhost:8990')
+      const {abi} = await sourcify.getABI(diamondJson.contracts.DiamondInit.address, 4)
+      diamondInit = new ethers.Contract(diamondJson.contracts.DiamondInit.address, abi)
+    } */
 
     diamondJson.type = 'remote'
     diamondJson.address = diamond.address
     await setDiamondJson(diamondJson, args.o)
+
     console.log(`[OK] Diamond deployed at address: ${diamond.address}`)
 
 
@@ -77,47 +103,61 @@ task("diamond:deploy", "Deploy a new diamond")
     const res = await verify(4, contractsToVerify, json)
     console.log('[OK] Diamond verified')
 
-    await hre.run('diamond:add', {
-      o: args.o,
-      remote: true,
-      address: diamondCutFacet.address
-    })
+    if (args.new) {
+      await hre.run('diamond:add', {
+        o: args.o,
+        remote: true,
+        address: diamondCutFacetAddress
+      })
+      await hre.run('diamond:add', {
+        o: args.o,
+        remote: true,
+        address: diamondInit.address,
+        skipFunctions: true
+      })
+    }
 
-    await hre.run('diamond:add', {
-      o: args.o,
-      remote: true,
-      address: diamondInit.address,
-      skipFunctions: true
-    })
 
     const cut = []
     if (!args.excludeLoupe) {
       console.log('Adding Loupe Facet...')
-      const facet = await ethers.getContractAt('DiamondLoupeFacet', '0xCb4392d595825a46D5e07A961FB4A27bd35bC3d4')
+      let diamondLoupeFacetAddress = '0xCb4392d595825a46D5e07A961FB4A27bd35bC3d4'
+      if (!args.new) {
+        diamondLoupeFacetAddress = diamondJson.contracts.DiamondLoupeFacet.address
+      }
+      const facet = await ethers.getContractAt('DiamondLoupeFacet', diamondLoupeFacetAddress)
       cut.push({
         facetAddress: facet.address,
         action: FacetCutAction.Add,
         functionSelectors: getSelectors(facet)
       })
-      await hre.run('diamond:add', {
-        o: args.o,
-        remote: true,
-        address: "0xCb4392d595825a46D5e07A961FB4A27bd35bC3d4"
-      })
+      if (args.new) {
+        await hre.run('diamond:add', {
+          o: args.o,
+          remote: true,
+          address: diamondLoupeFacetAddress
+        })
+      }
     }
     if (!args.excludeOwnership) {
       console.log('Adding Ownership Facet...')
-      const facet = await ethers.getContractAt('OwnershipFacet', '0x6e9B27a77eC19b2aF5A2da28AcD1434b3de4D6EE')
+      let ownershipFacet = '0x6e9B27a77eC19b2aF5A2da28AcD1434b3de4D6EE'
+      if (!args.new) {
+        ownershipFacet = diamondJson.contracts.OwnershipFacet.address
+      }
+      const facet = await ethers.getContractAt('OwnershipFacet', ownershipFacet)
       cut.push({
         facetAddress: facet.address,
         action: FacetCutAction.Add,
         functionSelectors: getSelectors(facet)
       })
-      await hre.run('diamond:add', {
-        o: args.o,
-        remote: true,
-        address: "0x6e9B27a77eC19b2aF5A2da28AcD1434b3de4D6EE"
-      })
+      if (args.new) {
+        await hre.run('diamond:add', {
+          o: args.o,
+          remote: true,
+          address: ownershipFacet
+        })
+      }
     }
 
     if (!args.excludeLoupe || !args.excludeOwnership) {
@@ -134,6 +174,9 @@ task("diamond:deploy", "Deploy a new diamond")
       console.log(`[OK] Diamond cut complete`)  
     }
 
+    await hre.run('diamond:cut', {
+      o: args.o
+    })
 
   })
 
