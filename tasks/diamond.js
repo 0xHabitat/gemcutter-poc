@@ -86,7 +86,7 @@ task("diamond:deploy", "Deploy a new diamond")
       address: diamondInit.address
     })
     /* } else {
-      const sourcify = new SourcifyJS.default('http://localhost:8990')
+      const sourcify = new SourcifyJS.default('http://localhost:8990', 'http://localhost:5500')
       const {abi} = await sourcify.getABI(diamondJson.contracts.DiamondInit.address, 4)
       diamondInit = new ethers.Contract(diamondJson.contracts.DiamondInit.address, abi)
     } */
@@ -229,7 +229,7 @@ task("diamond:add", "Adds facets and functions to diamond.json")
     }
     const diamondJson = await getDiamondJson(args.o)
     if (args.remote) {
-      const sourcify = new SourcifyJS.default('http://localhost:8990')
+      const sourcify = new SourcifyJS.default('http://localhost:8990', 'http://localhost:5500')
       let {abi, name} = await sourcify.getABI(args.address, 4)
       diamondJson.contracts[name] = {
         name,
@@ -303,7 +303,7 @@ task("diamond:cut", "Compare the local diamond.json with the remote diamond")
     /**@notice create functionSelectors for functions needed to add */
     let cut = [];
     for (let f of facetsToAdd) {
-      const sourcify = new SourcifyJS.default('http://localhost:8990')
+      const sourcify = new SourcifyJS.default('http://localhost:8990', 'http://localhost:5500')
   
       let facetAddress
       if (diamondJson.contracts[f.facet].type === 'remote') {
@@ -330,7 +330,7 @@ task("diamond:cut", "Compare the local diamond.json with the remote diamond")
 
     const facetsToReplace = differentiator.getFunctionFacetsToReplace()
     for (let f of facetsToReplace) {
-      const sourcify = new SourcifyJS.default('http://localhost:8990')
+      const sourcify = new SourcifyJS.default('http://localhost:8990', 'http://localhost:5500')
   
       let facetAddress
       if (diamondJson.contracts[f.facet].type === 'remote') {
@@ -357,7 +357,7 @@ task("diamond:cut", "Compare the local diamond.json with the remote diamond")
     
     const facetsToRemove = differentiator.getFunctionsFacetsToRemove()
     for (let f of facetsToRemove) {
-      const sourcify = new SourcifyJS.default('http://localhost:8990')
+      const sourcify = new SourcifyJS.default('http://localhost:8990', 'http://localhost:5500')
   
       let facetAddress
       if (diamondJson.contracts[f.facet].type === 'remote') {

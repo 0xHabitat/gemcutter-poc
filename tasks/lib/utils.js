@@ -39,7 +39,7 @@ let utils = {
     for await (const facet of facets) {
       const address = facet[0]
 
-      const sourcify = new SourcifyJS.default('http://localhost:8990')
+      const sourcify = new SourcifyJS.default('http://localhost:8990', 'http://localhost:5500')
 
       const { abi, name } = await sourcify.getABI(address, 4)
 
@@ -90,7 +90,7 @@ let utils = {
   async verify(chaindId, contracts, json) {
     // let json = await this.generateLightFile()
     const buffer = Buffer.from(JSON.stringify(json))
-    const sourcify = new SourcifyJS.default('http://localhost:8990')
+    const sourcify = new SourcifyJS.default('http://localhost:8990', 'http://localhost:5500')
     const result = await sourcify.verify(chaindId, contracts, buffer)
 
     return result;
