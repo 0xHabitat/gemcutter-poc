@@ -39,23 +39,33 @@ let utils = {
   async loupe(address, CHAIN_ID) {
     const diamondLoupeFacet = await ethers.getContractAt('DiamondLoupeFacet', address)
     const facets = await diamondLoupeFacet.facets()
-
+    
     let contracts = {}
     let functionSelectors = {}
-
+    
     for await (const facet of facets) {
       const address = facet[0]
+      
+      
 
       const sourcify = new SourcifyJS.default('http://localhost:8990', 'http://localhost:5500')
 
       const { abi, name } = await sourcify.getABI(address, CHAIN_ID)
 
+      const facetObj = new ethers.Contract(address, abi)
+      let fnNamesSelectors = await utils.getFunctionsNamesSelectorsFromFacet(facetObj)
+      const cuttedFacets = await diamondLoupeFacet.facetFunctionSelectors(address)
 
       let functions = []
       for (const obj of abi) {
-        if (obj.type === 'function') {
-          functions.push(obj.name)
-        }
+        try {
+          if (obj.type === 'function') {
+            const selector = fnNamesSelectors.find(ns => ns.name == obj.name).selector
+            if (cuttedFacets.includes(selector)) {
+              functions.push(obj.name)
+            }
+          }
+        } catch(e) {}
       }
 
       contracts[name] = {

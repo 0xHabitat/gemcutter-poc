@@ -96,6 +96,37 @@ task("diamond:deploy", "Deploy a new diamond")
     console.log(`[OK] Diamond deployed at address: ${diamond.address}`)
 
 
+    let diamondLoupeFacetAddress
+    if (args.new) {
+      const DiamondLoupeFacet = await ethers.getContractFactory('DiamondLoupeFacet')
+      const diamondLoupeFacet = await DiamondLoupeFacet.deploy()
+      diamondLoupeFacetAddress = diamondLoupeFacet.address
+      await diamondLoupeFacet.deployed()
+  
+      contractsToVerify.push({
+        name: 'DiamondLoupeFacet',
+        address: diamondLoupeFacetAddress
+      })
+    } else {
+      diamondLoupeFacetAddress = diamondJson.contracts.DiamondLoupeFacet.address
+    }
+
+    let ownershipFacetAddress
+    if (args.new) {
+      const OwnershipFacet = await ethers.getContractFactory('OwnershipFacet')
+      const ownershipFacet = await OwnershipFacet.deploy()
+      ownershipFacetAddress = ownershipFacet.address
+      await ownershipFacet.deployed()
+  
+      contractsToVerify.push({
+        name: 'OwnershipFacet',
+        address: ownershipFacetAddress
+      })
+    } else {
+      ownershipFacetAddress = diamondJson.contracts.OwnershipFacet.address
+    }
+
+
     let json = await generateLightFile()
   
     const res = await verify(CHAIN_ID, contractsToVerify, json)
@@ -120,10 +151,6 @@ task("diamond:deploy", "Deploy a new diamond")
     const cut = []
     if (!args.excludeLoupe) {
       console.log('Adding Loupe Facet...')
-      let diamondLoupeFacetAddress = '0x0B306BF915C4d645ff596e518fAf3F9669b97016'
-      if (!args.new) {
-        diamondLoupeFacetAddress = diamondJson.contracts.DiamondLoupeFacet.address
-      }
       const facet = await ethers.getContractAt('DiamondLoupeFacet', diamondLoupeFacetAddress)
       cut.push({
         facetAddress: facet.address,
@@ -140,11 +167,7 @@ task("diamond:deploy", "Deploy a new diamond")
     }
     if (!args.excludeOwnership) {
       console.log('Adding Ownership Facet...')
-      let ownershipFacet = '0x959922bE3CAee4b8Cd9a407cc3ac1C251C2007B1'
-      if (!args.new) {
-        ownershipFacet = diamondJson.contracts.OwnershipFacet.address
-      }
-      const facet = await ethers.getContractAt('OwnershipFacet', ownershipFacet)
+      const facet = await ethers.getContractAt('OwnershipFacet', ownershipFacetAddress)
       cut.push({
         facetAddress: facet.address,
         action: FacetCutAction.Add,
@@ -154,7 +177,7 @@ task("diamond:deploy", "Deploy a new diamond")
         await hre.run('diamond:add', {
           o: args.o,
           remote: true,
-          address: ownershipFacet
+          address: ownershipFacetAddress
         })
       }
     }
