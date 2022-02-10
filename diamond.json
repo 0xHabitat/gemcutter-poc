@@ -7,38 +7,30 @@
     "facets": "DiamondLoupeFacet",
     "supportsInterface": "DiamondLoupeFacet",
     "owner": "OwnershipFacet",
-    "transferOwnership": "OwnershipFacet",
-    "test1Func1": "Test1Facet",
-    "test1Func10": "Test1Facet",
-    "test1Func2": "Test1Facet"
+    "transferOwnership": "OwnershipFacet"
   },
   "contracts": {
-    "DiamondCutFacet": {
-      "name": "DiamondCutFacet",
-      "address": "0x143f2464404F2C18eECbDC31374222BB7fb7013D",
-      "type": "remote"
-    },
     "DiamondInit": {
       "name": "DiamondInit",
-      "address": "0x6a641BDBb594C73262bde83Cb45C3508B370D593",
+      "address": "0x9d4454B023096f34B160D6B654540c56A1F81688",
+      "type": "remote"
+    },
+    "DiamondCutFacet": {
+      "name": "DiamondCutFacet",
+      "address": "0x0E801D84Fa97b50751Dbf25036d067dCf18858bF",
       "type": "remote"
     },
     "DiamondLoupeFacet": {
       "name": "DiamondLoupeFacet",
-      "address": "0xCb4392d595825a46D5e07A961FB4A27bd35bC3d4",
+      "address": "0x0B306BF915C4d645ff596e518fAf3F9669b97016",
       "type": "remote"
     },
     "OwnershipFacet": {
       "name": "OwnershipFacet",
-      "address": "0x6e9B27a77eC19b2aF5A2da28AcD1434b3de4D6EE",
-      "type": "remote"
-    },
-    "Test1Facet": {
-      "name": "Test1Facet",
-      "address": "0x5D7a8f4e0B41cB1A5870E0c6670A27503d873218",
+      "address": "0x959922bE3CAee4b8Cd9a407cc3ac1C251C2007B1",
       "type": "remote"
     }
   },
   "type": "remote",
-  "address": "0x187A221f912584e0DdB270270E3159Bc23e71121"
+  "address": "0x8f86403A4DE0BB5791fa46B8e795C547942fE4Cf"
 }

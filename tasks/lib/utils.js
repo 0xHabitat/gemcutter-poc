@@ -3,6 +3,13 @@ const fs = require("fs");
 const { promises } = fs
 
 let utils = {
+  getChainIdByNetworkName(networkName) {
+    switch(networkName) {
+      case 'localhost': return 0
+      case 'rinkeby': return 4
+      default: throw 'Add chainId in utils.js'
+    }
+  },
   async getAddressFromArgs(args) {
     let address
     if (args.address !== "") {
@@ -29,7 +36,7 @@ let utils = {
       return false
     }
   },
-  async loupe(address) {
+  async loupe(address, CHAIN_ID) {
     const diamondLoupeFacet = await ethers.getContractAt('DiamondLoupeFacet', address)
     const facets = await diamondLoupeFacet.facets()
 
@@ -41,7 +48,7 @@ let utils = {
 
       const sourcify = new SourcifyJS.default('http://localhost:8990', 'http://localhost:5500')
 
-      const { abi, name } = await sourcify.getABI(address, 4)
+      const { abi, name } = await sourcify.getABI(address, CHAIN_ID)
 
 
       let functions = []
@@ -64,7 +71,7 @@ let utils = {
 
     return {
       address: address,
-      chaindId: 4, // TODO: how to get chainId
+      chaindId: CHAIN_ID, // TODO: how to get chainId
       functionSelectors,
       contracts
     }

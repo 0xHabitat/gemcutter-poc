@@ -14,7 +14,8 @@ const {
   getDiamondJson,
   setDiamondJson,
   getFunctionsNamesSelectorsFromFacet,
-  getAddressFromArgs
+  getAddressFromArgs,
+  getChainIdByNetworkName
 } = require('./lib/utils.js')
 
 require('dotenv').config();
@@ -24,7 +25,9 @@ task("diamond:deploy", "Deploy a new diamond")
   .addFlag("new", "Deploy a new Diamond")
   .addFlag("excludeLoupe", "Exclude loupe facet from default address as remote facet")
   .addFlag("excludeOwnership", "Exclude cut facet from default address as remote facet")
-  .setAction(async (args) => {
+  .setAction(async (args, hre) => {
+    const CHAIN_ID = getChainIdByNetworkName(hre.config.defaultNetwork)
+
     await hre.run("clean")
     await hre.run("compile")
     
@@ -85,11 +88,6 @@ task("diamond:deploy", "Deploy a new diamond")
       name: 'DiamondInit',
       address: diamondInit.address
     })
-    /* } else {
-      const sourcify = new SourcifyJS.default('http://localhost:8990', 'http://localhost:5500')
-      const {abi} = await sourcify.getABI(diamondJson.contracts.DiamondInit.address, 4)
-      diamondInit = new ethers.Contract(diamondJson.contracts.DiamondInit.address, abi)
-    } */
 
     diamondJson.type = 'remote'
     diamondJson.address = diamond.address
@@ -100,7 +98,8 @@ task("diamond:deploy", "Deploy a new diamond")
 
     let json = await generateLightFile()
   
-    const res = await verify(4, contractsToVerify, json)
+    const res = await verify(CHAIN_ID, contractsToVerify, json)
+    
     console.log('[OK] Diamond verified')
 
     if (args.new) {
@@ -121,7 +120,7 @@ task("diamond:deploy", "Deploy a new diamond")
     const cut = []
     if (!args.excludeLoupe) {
       console.log('Adding Loupe Facet...')
-      let diamondLoupeFacetAddress = '0xCb4392d595825a46D5e07A961FB4A27bd35bC3d4'
+      let diamondLoupeFacetAddress = '0x0B306BF915C4d645ff596e518fAf3F9669b97016'
       if (!args.new) {
         diamondLoupeFacetAddress = diamondJson.contracts.DiamondLoupeFacet.address
       }
@@ -141,7 +140,7 @@ task("diamond:deploy", "Deploy a new diamond")
     }
     if (!args.excludeOwnership) {
       console.log('Adding Ownership Facet...')
-      let ownershipFacet = '0x6e9B27a77eC19b2aF5A2da28AcD1434b3de4D6EE'
+      let ownershipFacet = '0x959922bE3CAee4b8Cd9a407cc3ac1C251C2007B1'
       if (!args.new) {
         ownershipFacet = diamondJson.contracts.OwnershipFacet.address
       }
@@ -183,9 +182,9 @@ task("diamond:deploy", "Deploy a new diamond")
 task("diamond:clone", "Do stuff with diamonds")
   .addParam("address", "The diamond's address")
   .addOptionalParam("o", "The file to create", "diamond.json")
-  .setAction(async (args) => {
-   
-    let output = await loupe(args.address)
+  .setAction(async (args, hre) => {
+    const CHAIN_ID = getChainIdByNetworkName(hre.config.defaultNetwork)
+    let output = await loupe(args.address, CHAIN_ID)
 
     if (args.o) {
       let filename = args.o
@@ -199,9 +198,10 @@ task("diamond:status", "Compare the local diamond.json with the remote diamond")
   .addOptionalParam("address", "The diamond's address", "")
   .addOptionalParam("o", "The file to create", "diamond.json")
   .setAction(async (args) => {
+    const CHAIN_ID = getChainIdByNetworkName(hre.config.defaultNetwork)
     let address = await getAddressFromArgs(args)
 
-    let output1 = await loupe(address)
+    let output1 = await loupe(address, CHAIN_ID)
 
     let output2 = await getDiamondJson(args.o)
 
@@ -224,13 +224,14 @@ task("diamond:add", "Adds facets and functions to diamond.json")
   .addFlag("skipFunctions", "Only add contract")
   .setAction(
   async (args, hre) => {
+    const CHAIN_ID = getChainIdByNetworkName(hre.config.defaultNetwork)
     if (args.remote && args.local) {
       return console.log('remote or local, not both')
     }
     const diamondJson = await getDiamondJson(args.o)
     if (args.remote) {
       const sourcify = new SourcifyJS.default('http://localhost:8990', 'http://localhost:5500')
-      let {abi, name} = await sourcify.getABI(args.address, 4)
+      let {abi, name} = await sourcify.getABI(args.address, CHAIN_ID)
       diamondJson.contracts[name] = {
         name,
         address: args.address,
@@ -252,7 +253,7 @@ task("diamond:add", "Adds facets and functions to diamond.json")
 
 // diamond:replace
 
-async function deployAndVerifyFacetsFromDiff(facetsToDeployAndVerify) {
+async function deployAndVerifyFacetsFromDiff(facetsToDeployAndVerify, CHAIN_ID) {
   /**@notice deploy new facets */
   console.log('Deploying facets...')
   let contracts = []
@@ -272,7 +273,7 @@ async function deployAndVerifyFacetsFromDiff(facetsToDeployAndVerify) {
   /**@notice verify contracts */
   let json = await generateLightFile()
   
-  const res = await verify(4, contracts, json)
+  const res = await verify(CHAIN_ID, contracts, json)
   console.log('[OK] Deployed facets verified')
   return contracts
 }
@@ -282,6 +283,7 @@ task("diamond:cut", "Compare the local diamond.json with the remote diamond")
   .addOptionalParam("address", "The diamond's address", "")
   .addOptionalParam("o", "The file to create", "diamond.json")
   .setAction(async (args, hre) => {
+    const CHAIN_ID = getChainIdByNetworkName(hre.config.defaultNetwork)
     let address = await getAddressFromArgs(args)
 
     await hre.run("clean")
@@ -289,14 +291,14 @@ task("diamond:cut", "Compare the local diamond.json with the remote diamond")
 
     /**@notice get contracts to deploy by comparing local and remote diamond.json */
     console.log('Louping diamond...')
-    let output1 = await loupe(address)
+    let output1 = await loupe(address, CHAIN_ID)
     console.log('[OK] Diamond louped')
     
     const diamondJson = await getDiamondJson(args.o)
     const differentiator = new DiamondDifferentiator(output1, diamondJson)
     const facetsToDeployAndVerify = differentiator.getContractsToDeploy();
 
-    const verifiedFacets = await deployAndVerifyFacetsFromDiff(facetsToDeployAndVerify)
+    const verifiedFacets = await deployAndVerifyFacetsFromDiff(facetsToDeployAndVerify, CHAIN_ID)
 
     const facetsToAdd = differentiator.getFunctionsFacetsToAdd()
 
@@ -311,7 +313,7 @@ task("diamond:cut", "Compare the local diamond.json with the remote diamond")
       } else {
         facetAddress = verifiedFacets.find(vf => vf.name === f.facet).address
       }
-      const {abi} = await sourcify.getABI(facetAddress, 4)
+      const {abi} = await sourcify.getABI(facetAddress, CHAIN_ID)
       const facet = new ethers.Contract(facetAddress, abi)
   
       let fnNamesSelectors = await getFunctionsNamesSelectorsFromFacet(facet)
@@ -338,7 +340,7 @@ task("diamond:cut", "Compare the local diamond.json with the remote diamond")
       } else {
         facetAddress = verifiedFacets.find(vf => vf.name === f.facet).address
       }
-      const {abi} = await sourcify.getABI(facetAddress, 4)
+      const {abi} = await sourcify.getABI(facetAddress, CHAIN_ID)
       const facet = new ethers.Contract(facetAddress, abi)
   
       let fnNamesSelectors = await getFunctionsNamesSelectorsFromFacet(facet)
@@ -365,7 +367,7 @@ task("diamond:cut", "Compare the local diamond.json with the remote diamond")
       } else {
         facetAddress = verifiedFacets.find(vf => vf.name === f.facet).address
       }
-      const {abi} = await sourcify.getABI(facetAddress, 4)
+      const {abi} = await sourcify.getABI(facetAddress, CHAIN_ID)
       const facet = new ethers.Contract(facetAddress, abi)
   
       let fnNamesSelectors = await getFunctionsNamesSelectorsFromFacet(facet)

@@ -26,7 +26,7 @@ require("./tasks/sourcify.js");
 
 module.exports = {
   solidity: "0.8.4",
-  defaultNetwork: "rinkeby",
+  defaultNetwork: "localhost",
   networks: {
     ropsten: {
       url: `${process.env.ALCHEMY_ROPSTEN_URL}`,
