@@ -243,7 +243,8 @@ task("diamond:add", "Adds facets and functions to diamond.json")
   .addFlag("remote", "Add remote facet")
   .addFlag("local", "Add local facet")
   .addOptionalParam("o", "The diamond file to output to", "diamond.json")
-  .addOptionalParam("address", "The address of the facet to add")
+  .addOptionalParam("address", "The address of the remote facet to add")
+  .addOptionalParam("name", "The name of the local facet to add")
   .addFlag("skipFunctions", "Only add contract")
   .setAction(
   async (args, hre) => {
@@ -269,6 +270,27 @@ task("diamond:add", "Adds facets and functions to diamond.json")
       }
       await setDiamondJson(diamondJson, args.o)
       console.log(`[OK] Add facet ${name} to ${args.o}`)
+    } else if (args.local) {
+      
+      const FacetName = args.name
+      const Facet = await ethers.getContractFactory(FacetName)
+
+      const signatures = Object.keys(Facet.interface.functions)
+
+      const functionSelectors = {}
+      signatures.forEach(val => {
+        functionSelectors[val.substr(0, val.indexOf('('))] = FacetName
+      })
+      
+      diamondJson.contracts[FacetName] = {
+        "name": FacetName,
+        "type": "local"
+      }
+
+      diamondJson.functionSelectors = {...diamondJson.functionSelectors, ...functionSelectors}
+
+      console.log(`[OK] Add facet ${FacetName} to ${args.o}`)
+      await setDiamondJson(diamondJson, args.o)
     }
   });
 
@@ -327,6 +349,17 @@ task("diamond:cut", "Compare the local diamond.json with the remote diamond")
 
     /**@notice create functionSelectors for functions needed to add */
     let cut = [];
+
+    let diamondJsonContracts = {...diamondJson.contracts}
+    verifiedFacets.forEach(vf => {
+      diamondJsonContracts[vf.name] = {
+        name: vf.name,
+        address: vf.address,
+        type: 'remote'
+      }
+    })
+    // TOODO: let diamondJsonFunctionSelectors = {...diamondJson.functionSelectors}
+
     for (let f of facetsToAdd) {
       const sourcify = new SourcifyJS.default('http://localhost:8990', 'http://localhost:5500')
   
@@ -428,6 +461,11 @@ task("diamond:cut", "Compare the local diamond.json with the remote diamond")
     if (!receipt.status) {
       throw Error(`Diamond upgrade failed: ${tx.hash}`)
     }
+
+    diamondJson.contracts = diamondJsonContracts
+
+    await setDiamondJson(diamondJson, args.o)
+
     console.log('[OK] Completed diamond cut')
 
     // and input facet's address and type into diamond.json
