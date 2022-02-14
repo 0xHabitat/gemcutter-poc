@@ -239,7 +239,7 @@ task("diamond:status", "Compare the local diamond.json with the remote diamond")
   });
 
 
-task("diamond:add", "Adds facets and functions to diamond.json")
+task("diamond:add", "Adds or replace facets and functions to diamond.json")
   .addFlag("remote", "Add remote facet")
   .addFlag("local", "Add local facet")
   .addOptionalParam("o", "The diamond file to output to", "diamond.json")
@@ -298,65 +298,33 @@ task("diamond:add", "Adds facets and functions to diamond.json")
   });
 
 // diamond:remove
-task("diamond:replace", "Adds facets and functions to diamond.json")
-  .addFlag("remote", "Add remote facet")
-  .addFlag("local", "Add local facet")
+task("diamond:remove", "Remove facets and functions to diamond.json")
   .addOptionalParam("o", "The diamond file to output to", "diamond.json")
-  .addOptionalParam("address", "The address of the remote facet to add")
   .addOptionalParam("name", "The name of the local facet to add")
-  .addFlag("skipFunctions", "Only add contract")
   .setAction(
   async (args, hre) => {
-    const CHAIN_ID = getChainIdByNetworkName(hre.config.defaultNetwork)
-    if (args.remote && args.local) {
-      return console.log('remote or local, not both')
-    }
+    const FacetName = args.name
     const diamondJson = await getDiamondJson(args.o)
-    if (args.remote) {
-      const sourcify = new SourcifyJS.default('http://localhost:8990', 'http://localhost:5500')
-      let {abi, name} = await sourcify.getABI(args.address, CHAIN_ID)
-      diamondJson.contracts[name] = {
-        name,
-        address: args.address,
-        type: "remote"
+    
+    let newFunctionSelectors = {}
+    for (let fn in diamondJson.functionSelectors) {
+      let facet = diamondJson.functionSelectors[fn]
+      if (facet != FacetName) {
+        newFunctionSelectors[fn] = facet
       }
-      if (!args.skipFunctions) {
-        for(let obj of abi) {
-          if (obj.type === 'function') {
-            diamondJson.functionSelectors[obj.name] = name
-          }
-        }
-      }
-      await setDiamondJson(diamondJson, args.o)
-      console.log(`[OK] Add facet ${name} to ${args.o}`)
-    } else if (args.local) {
-      
-      const FacetName = args.name
-      const Facet = await ethers.getContractFactory(FacetName)
-
-      const signatures = Object.keys(Facet.interface.functions)
-
-      const functionSelectors = {}
-      signatures.forEach(val => {
-        functionSelectors[val.substr(0, val.indexOf('('))] = FacetName
-      })
-      
-      diamondJson.contracts[FacetName] = {
-        "name": FacetName,
-        "type": "local"
-      }
-
-      diamondJson.functionSelectors = {...diamondJson.functionSelectors, ...functionSelectors}
-
-      console.log(`[OK] Add facet ${FacetName} to ${args.o}`)
-      await setDiamondJson(diamondJson, args.o)
     }
+    diamondJson.functionSelectors = newFunctionSelectors
+    console.log(`[OK] Remove facet ${FacetName} from ${args.o}`)
+    await setDiamondJson(diamondJson, args.o)
   });
 
 // diamond:replace
 
 async function deployAndVerifyFacetsFromDiff(facetsToDeployAndVerify, CHAIN_ID) {
   /**@notice deploy new facets */
+  if (facetsToDeployAndVerify.length === 0) {
+    []
+  }
   console.log('Deploying facets...')
   let contracts = []
   for (const contract of facetsToDeployAndVerify) {
@@ -494,6 +462,9 @@ task("diamond:cut", "Compare the local diamond.json with the remote diamond")
         })
       } else {
         cut[cutAddressIndex].functionSelectors.push(fn.selector)
+      }
+      if (cut[cutAddressIndex] && cut[cutAddressIndex].functionSelectors.length === fnNamesSelectors.length) {
+        delete diamondJson.contracts[FacetName]
       }
     }
 
