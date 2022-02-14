@@ -86,11 +86,21 @@ module.exports = class DiamondDifferentiator {
       return []
     }
     let contractsToDeploy = Object.keys(this.d[_CONTRACTS]).filter(fn => {
-      return fn.endsWith('__added') && this.d[_CONTRACTS][fn].type === 'local'
+      return (
+        fn.endsWith('__added') && this.d[_CONTRACTS][fn].type === 'local' ||
+        (this.d[_CONTRACTS][fn].type && this.d[_CONTRACTS][fn].type.__old === 'remote' && this.d[_CONTRACTS][fn].type.__new === 'local')
+      )
     })
 
     let contractsInfoToDeploy = contractsToDeploy.map(fn => {
-      return this.d[_CONTRACTS][fn]
+      if (this.d[_CONTRACTS][fn].type.__old === 'remote' && this.d[_CONTRACTS][fn].type.__new === 'local') {
+        return {
+          type: 'local',
+          name: fn,
+        }
+      } else {
+        return this.d[_CONTRACTS][fn]
+      }
     })
 
     return contractsInfoToDeploy.concat(this.getContractsToReplace(this.d))
