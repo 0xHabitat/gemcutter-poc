@@ -4,7 +4,7 @@
 Everything you see is under development and it's just a prototype
 
 ## Docs
-Read the docs here https://docs.0xhabitat.org/Developers/Gemcutter
+Read the docs here https://0xhabitat.org/docs/Developers/Gemcutter
 (Just a part of the docs is actually implemented here)
 
 ## Sourcify
